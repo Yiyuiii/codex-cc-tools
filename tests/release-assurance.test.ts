@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 interface PackageJson {
   bin?: Record<string, string>;
   files?: string[];
+  repository?: { type?: string; url?: string };
   scripts?: Record<string, string>;
   version?: string;
 }
@@ -51,6 +52,15 @@ describe("release assurance", () => {
     expect(pkg.scripts?.["verify:release"]).toContain("npm run release:smoke");
     expect(pkg.scripts?.preflight).toContain("npm ci");
     expect(pkg.scripts?.preflight).toContain("npm run verify:release");
+  });
+
+  it("declares the GitHub repository used by npm trusted publishing", () => {
+    const pkg = readPackageJson();
+
+    expect(pkg.repository).toEqual({
+      type: "git",
+      url: "git+https://github.com/Yiyuiii/codex-cc-tools.git"
+    });
   });
 
   it("keeps CLI and MCP server version in sync with package metadata", () => {

@@ -1,8 +1,16 @@
 {
   "name": "codex-cc-tools",
-  "version": "0.1.0-beta.0",
+  "version": "0.1.0-beta.1",
   "description": "Claude Code task tools for Codex, including review and delegated subtasks.",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Yiyuiii/codex-cc-tools.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Yiyuiii/codex-cc-tools/issues"
+  },
+  "homepage": "https://github.com/Yiyuiii/codex-cc-tools#readme",
   "bin": {
     "codex-cc-tools": "dist/index.js",
     "codex-cc-tools-mcp": "dist/mcp-server.js"
