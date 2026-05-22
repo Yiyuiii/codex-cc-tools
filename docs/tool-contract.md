@@ -15,7 +15,8 @@ Use `review` for external critique of plans, diffs, and documents. It asks Claud
 ## Delegate
 
 Use `delegate` to pass one complete prompt from Codex to Claude Code and return
-structured results. It requires:
+structured results. It is intended for autonomous delegated subtasks, including
+read-only investigation and writable implementation. It requires:
 
 - `prompt`
 
@@ -27,3 +28,7 @@ the prompt rather than separate MCP fields.
 files or run commands. The tool invokes Claude Code in non-interactive
 `bypassPermissions` mode for autonomous execution. Caller-managed OS,
 container, worktree, repository, and command policy remain outside this tool.
+`delegate` defaults to `providerProfile: "deepseek"`; callers can set
+`providerProfile: "anthropic"` when they want native Claude Code routing.
+Callers may launch multiple `delegate` tasks in parallel when they ensure the
+prompts define independent read-only or disjoint writable scopes.

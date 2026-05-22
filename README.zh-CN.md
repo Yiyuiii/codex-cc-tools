@@ -20,9 +20,9 @@
 - Node.js 20 或更新版本
 - npm 或 npx
 - 本机可运行 `claude`，并且 `claude --version` 应该成功
-- 默认 `anthropic` provider profile 需要 Claude Code 已完成本地登录或配置
+- 使用 `cc_delegate` 且不覆盖 `providerProfile` 时需要 DeepSeek API key
+- 如果使用原生 `anthropic` provider profile，需要 Claude Code 已完成本地登录或配置
 - Codex 或其他支持 stdio MCP server 的客户端
-- 可选：如果要使用 DeepSeek，需要 DeepSeek API key
 
 全局安装：
 
@@ -71,9 +71,9 @@ enabled_tools = ["cc_review", "cc_delegate"]
 
 ## 发布用户需要提供哪些参数
 
-默认 `providerProfile: "anthropic"` 会委托给原生 `claude` 命令。先确认 `claude --version` 成功；如果 Claude Code 本地认证还没准备好，先交互式运行一次 Claude Code。
+原生 `providerProfile: "anthropic"` 会委托给原生 `claude` 命令。先确认 `claude --version` 成功；如果 Claude Code 本地认证还没准备好，先交互式运行一次 Claude Code。
 
-默认 profile 不要求用户提供 `ANTHROPIC_AUTH_TOKEN` 或 `ANTHROPIC_API_KEY` 环境变量。Claude Code 可以使用自己的本地登录态、profile、keychain、OAuth 或已有路由配置。如果环境里已经存在 Anthropic、Bedrock、Vertex 或代理路由变量，它们会被 Claude Code 子进程继承；这些是可选输入，不是必需配置。
+`anthropic` profile 不要求用户提供 `ANTHROPIC_AUTH_TOKEN` 或 `ANTHROPIC_API_KEY` 环境变量。Claude Code 可以使用自己的本地登录态、profile、keychain、OAuth 或已有路由配置。如果环境里已经存在 Anthropic、Bedrock、Vertex 或代理路由变量，它们会被 Claude Code 子进程继承；这些是可选输入，不是必需配置。
 
 如果要使用 DeepSeek，需要在启动 Codex 或 MCP server 的环境里设置其中一个：
 
@@ -121,14 +121,14 @@ DeepSeek profile 接受的模型参数：
 | MCP 工具 | CLI 命令 | 权限 | 用途 |
 | --- | --- | --- | --- |
 | `cc_review` | `codex-cc-tools review` | 只读产品约束 | 审阅计划、diff、文档、对抗性方案 |
-| `cc_delegate` | `codex-cc-tools delegate` | destructive Claude Code 执行 | 执行 Codex 给出的完整 prompt |
+| `cc_delegate` | `codex-cc-tools delegate` | destructive Claude Code 执行 | 自主委托子任务，包括只读调查和可写实现 |
 
 推荐给 Codex 的工作流提示：
 
 ```text
 复杂变更中，在关键检查点使用 codex-cc-tools。
 实现前和最终 diff 前使用 cc_review。
-当 Codex 已经准备好执行空间，并希望 Claude Code 执行一段完整 prompt 时，使用 cc_delegate。
+把独立子任务交给 cc_delegate；在 prompt 里明确这是只读调查还是可写实现，范围独立时可以并行调用。
 Claude Code 的输出是建议性证据，Codex 必须明确说明采纳、拒绝或搁置哪些发现。
 ```
 
@@ -136,7 +136,7 @@ Claude Code 的输出是建议性证据，Codex 必须明确说明采纳、拒�
 
 所有工具都支持：
 
-- `providerProfile`：默认 `anthropic`，也可设为 `deepseek`
+- `providerProfile`：`cc_review` 默认 `anthropic`；`cc_delegate` 默认 `deepseek`
 - `model`：默认 `opus`，按 provider profile 解析别名
 - `effort`：默认 `max`，可选 `low`、`medium`、`high`、`max`
 - `cwd`：适用任务的工作目录
@@ -168,7 +168,9 @@ Claude Code 的输出是建议性证据，Codex 必须明确说明采纳、拒�
 }
 ```
 
-`cc_delegate` 在 MCP metadata 中标记为 destructive，并使用 Claude Code 的非交互 `bypassPermissions` 模式执行，以便自主完成任务。它不创建、不检查、也不强制执行空间。如果需要 worktree、容器、临时目录、分支策略或命令策略，请在调用 MCP 前由外层准备好，再把最终要求写进 `prompt`。
+`cc_delegate` 默认使用 `providerProfile: "deepseek"`。它在 MCP metadata 中标记为 destructive，因为会使用 Claude Code 的非交互 `bypassPermissions` 模式自主执行。只要 prompt 明确禁止改文件，它也可用于只读调查；但工具元数据必须反映它具备写入能力。它不创建、不检查、也不强制执行空间。如果需要 worktree、容器、临时目录、分支策略或命令策略，请在调用 MCP 前由外层准备好，再把最终要求写进 `prompt`。
+
+多个 `cc_delegate` 调用可以并行发起，前提是调用方确保它们都是只读任务，或写入范围互不重叠。
 
 ## CLI 示例
 
@@ -202,7 +204,7 @@ codex-cc-tools review \
 
 | 设置 | 默认值 | 说明 |
 | --- | --- | --- |
-| `providerProfile` | `anthropic` | 使用原生 Claude Code profile/auth。`deepseek` 需要 MCP server 环境里有 `DEEPSEEK_API_KEY` 或 `OPENAI_API_KEY_DEEPSEEK`。 |
+| `providerProfile` | `cc_review`: `anthropic`; `cc_delegate`: `deepseek` | `anthropic` 使用原生 Claude Code profile/auth。`deepseek` 需要 MCP server 环境里有 `DEEPSEEK_API_KEY` 或 `OPENAI_API_KEY_DEEPSEEK`。 |
 | `model` | `opus` | DeepSeek profile 中，`opus` 和 `sonnet` 映射到 `deepseek-v4-pro[1m]`，`haiku` 映射到 `deepseek-v4-flash`。 |
 | `effort` | `max` | 更慢，也可能更贵。对按量计费 provider，常规检查建议改成 `medium` 或 `low`。 |
 | `cacheTtl` | `1h` | 给 Claude Code prompt cache 的提示；cache 和 cost 字段以 Claude Code/provider 报告为准。 |
@@ -226,7 +228,7 @@ codex-cc-tools doctor
 - DeepSeek 提示缺少凭据：在启动 Codex 或 MCP server 的环境里设置 `DEEPSEEK_API_KEY` 或 `OPENAI_API_KEY_DEEPSEEK`。
 - 只在某个终端里设置 key 不够，除非 Codex/MCP server 也是从这个终端启动的。请从包含该变量的环境重启 Codex，或设置 OS 级持久用户变量。
 - DeepSeek 控制台没有请求：对照返回诊断里的 token source，例如 `DeepSeek route target: api.deepseek.com; token source: OPENAI_API_KEY_DEEPSEEK.`，确认监控的是同一个 key/账号。
-- `ANTHROPIC_AUTH_TOKEN` / `ANTHROPIC_API_KEY` 为空：默认 profile 下这不是错误，只要原生 Claude Code auth 可用即可。
+- `ANTHROPIC_AUTH_TOKEN` / `ANTHROPIC_API_KEY` 为空：`anthropic` profile 下这不是错误，只要原生 Claude Code auth 可用即可。
 - 任务超时：提高 Codex 配置里的 `tool_timeout_sec` 或任务输入里的 `timeoutMs`。
 - MCP 使用 `npx` 启动超时：第一次 `npx` 可能受 npm 冷缓存或网络影响较慢。`npx` 配置建议保留 `startup_timeout_sec = 60`；全局安装后的 `codex-cc-tools-mcp` 可以使用更短启动超时。
 - delegate 不检查 worktree、路径、分支或命令白名单：调用前由外层准备执行空间，任务细节直接写进 `prompt`。
@@ -240,7 +242,7 @@ codex-cc-tools doctor
 `codex-cc-tools` 保留这个审阅工作流，并增加一个自主执行入口：
 
 - `cc_review`：第二意见审阅
-- `cc_delegate`：destructive Claude Code prompt 执行
+- `cc_delegate`：由 prompt 驱动的 Claude Code 执行，可按任务范围只读或写入
 
 Provider routing 与 task 正交。DeepSeek 不是一个任务，而是通过 `providerProfile: "deepseek"` 选择的后端。
 

@@ -12,7 +12,7 @@ limited to review-style critique and thin delegated execution.
 
 A provider profile decides which backend Claude Code uses.
 
-- `anthropic`: the inherited/default Claude Code backend.
+- `anthropic`: the inherited/native Claude Code backend.
 - `deepseek`: DeepSeek's Anthropic-compatible endpoint. It has passed the
   current repeated-run gate for the implemented `review` task.
 
@@ -23,7 +23,8 @@ Provider profiles own model mapping, environment construction, provider-token re
 A task decides what Claude Code is asked to do.
 
 - `review`: read-only external review.
-- `delegate`: thin Claude Code prompt execution.
+- `delegate`: thin Claude Code prompt execution. It defaults to the `deepseek`
+  provider profile.
 
 Tasks should not hard-code provider details. A review or delegate task can run
 on `anthropic` or `deepseek`.

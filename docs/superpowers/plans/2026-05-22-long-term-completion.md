@@ -169,7 +169,7 @@ Common schema note: Claude Code effort values are `low`, `medium`, `high`, and `
 - [x] Migrate the complete stream event union, parser function signature, and happy-path parser implementation in this milestone so runner output shape is locked before the full review migration.
 - [x] Add at least one reviewer stream fixture from `codex-cc-reviewer` and a fake-executor test that parses it end-to-end, including provider-token redaction through parsed activity and final output.
 - [x] Add runner tests using fake executors; do not require a real `claude` binary.
-- [x] Keep `anthropic` behavior pass-through and default.
+- [x] Keep `anthropic` behavior pass-through and the initial review/provider-registry default. Later product direction changed `cc_delegate` to default to `deepseek`; see `AGENTS.md` and `docs/delegate-safety.md`.
 - [x] Define the `anthropic` profile inheritance policy explicitly: either trust caller-provided Claude Code route variables and document that in `docs/security.md`, or clean selected route variables and test the cleaning. Do not leave this implicit.
 - [x] Preserve and test model alias resolution for `opus`, `sonnet`, and `haiku` in both `anthropic` and `deepseek` profiles.
 

@@ -11,7 +11,7 @@ describe("CcDelegateInputSchema", () => {
       prompt: "Implement the focused change."
     });
 
-    expect(parsed.providerProfile).toBe("anthropic");
+    expect(parsed.providerProfile).toBe("deepseek");
     expect(parsed.model).toBe("opus");
     expect(parsed.effort).toBe("max");
     expect(parsed.cwd).toBeUndefined();

@@ -9,7 +9,7 @@ export const CcDelegateInputSchema = z
   .object({
     prompt: NonEmptyStringSchema,
     cwd: NonEmptyStringSchema.optional(),
-    providerProfile: ProviderProfileSchema.default("anthropic"),
+    providerProfile: ProviderProfileSchema.default("deepseek"),
     model: NonEmptyStringSchema.default("opus"),
     effort: ClaudeEffortSchema.default("max"),
     timeoutMs: z.number().int().positive().max(3_600_000).default(900_000),

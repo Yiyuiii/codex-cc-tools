@@ -61,7 +61,7 @@ Expected: pass.
 
 - [x] **Step 1: Write provider test**
 
-Assert that `anthropic` is default and `deepseek` starts with the intended initial status. DeepSeek was initially experimental and was later promoted for the implemented `review` task after the Milestone 3 gate.
+Assert that `anthropic` is the initial review/provider-registry default and `deepseek` starts with the intended initial status. DeepSeek was initially experimental and was later promoted for the implemented `review` task after the Milestone 3 gate. Later product direction changed `cc_delegate` to default to `deepseek`; see `AGENTS.md` and `docs/delegate-safety.md`.
 
 - [x] **Step 2: Implement model mapping**
 

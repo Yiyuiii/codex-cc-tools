@@ -2,7 +2,11 @@
 
 `cc_delegate` is a thin Claude Code execution bridge for Codex. Codex supplies a
 complete prompt, the tool starts Claude Code, Claude Code works continuously, and
-the tool returns structured results to Codex.
+the tool returns structured results to Codex. It is suitable for autonomous
+delegated subtasks, including read-only investigation and writable
+implementation, when the prompt states the intended scope.
+Multiple `cc_delegate` calls may run in parallel when the caller ensures their
+tasks are read-only or their writable scopes are disjoint.
 
 This tool is not an execution-space manager, sandbox, worktree creator, branch
 policy engine, path policy engine, or command policy engine. Those concerns
@@ -108,10 +112,11 @@ return the available transcript tail and diagnostics with `status: "failed"`.
 
 ## DeepSeek Use
 
-`providerProfile: "deepseek"` routes the Claude Code child process through the
-DeepSeek Anthropic-compatible endpoint. The default model alias remains `opus`,
-which maps to DeepSeek V4 Pro in the DeepSeek profile. Claude Code subagents are
-configured by the provider environment as documented in `docs/security.md`.
+`cc_delegate` defaults to `providerProfile: "deepseek"`, which routes the Claude
+Code child process through the DeepSeek Anthropic-compatible endpoint. The
+default model alias remains `opus`, which maps to DeepSeek V4 Pro in the
+DeepSeek profile. Claude Code subagents are configured by the provider
+environment as documented in `docs/security.md`.
 
 ## Test Expectations
 

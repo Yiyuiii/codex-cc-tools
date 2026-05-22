@@ -47,7 +47,7 @@ export function createProgram(deps: CreateProgramDeps = {}): Command {
     .description("Run Claude Code on a Codex-provided prompt.")
     .requiredOption("--prompt <prompt>", "Complete prompt to pass to Claude Code.")
     .option("--cwd <path>", "Working directory for the Claude Code subprocess.")
-    .option("--provider-profile <profile>", "Provider profile: anthropic or deepseek.")
+    .option("--provider-profile <profile>", "Provider profile: deepseek by default, or anthropic.")
     .option("--model <model>", "Claude Code model or provider alias.")
     .option("--effort <level>", "Claude Code effort level.")
     .option("--timeout-ms <number>", "Claude Code subprocess timeout.")

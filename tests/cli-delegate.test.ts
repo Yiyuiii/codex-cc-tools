@@ -31,6 +31,7 @@ describe("runLocalDelegate", () => {
       cwd: "D:\\Codes\\repo-worktree",
       timeoutMs: 120000,
       maxContextChars: 5000,
+      providerProfile: "deepseek",
       stream: false
     });
     expect(write.mock.calls[0]?.[0]).toContain("Status: succeeded");

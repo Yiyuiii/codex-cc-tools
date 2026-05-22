@@ -1,6 +1,6 @@
 {
   "name": "codex-cc-tools",
-  "version": "0.2.0",
+  "version": "0.2.1-beta.0",
   "description": "Claude Code task tools for Codex, including review and delegated subtasks.",
   "type": "module",
   "repository": {

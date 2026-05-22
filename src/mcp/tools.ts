@@ -28,7 +28,8 @@ export function registerCcDelegateTool(
     "cc_delegate",
     {
       title: "Claude Code Delegate",
-      description: "Run Claude Code for explicit writable delegated work.",
+      description:
+        "Run a DeepSeek-default Claude Code worker for autonomous delegated subtasks; caller must ensure parallel tasks are read-only or have disjoint writable scopes.",
       inputSchema: CcDelegateInputSchema.shape,
       outputSchema: CcDelegateOutputSchema.shape,
       annotations: {

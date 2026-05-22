@@ -36,6 +36,19 @@ describe("codex-cc-tools CLI", () => {
     expect(result.stdout).not.toMatch(/^\s+verify\b/m);
   });
 
+  it("documents distinct provider defaults for delegate and review commands", () => {
+    const program = createProgram();
+    const delegate = program.commands.find((command) => command.name() === "delegate");
+    const review = program.commands.find((command) => command.name() === "review");
+
+    expect(delegate?.options.find((option) => option.long === "--provider-profile")?.description).toBe(
+      "Provider profile: deepseek by default, or anthropic."
+    );
+    expect(review?.options.find((option) => option.long === "--provider-profile")?.description).toBe(
+      "Provider profile: anthropic or deepseek."
+    );
+  });
+
   it("parses review command boolean defaults without opting into git or untracked flags", async () => {
     let observedOptions: Record<string, unknown> | undefined;
     const program = createProgram({

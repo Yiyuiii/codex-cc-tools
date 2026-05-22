@@ -5,10 +5,11 @@
 - Node.js 20 or newer
 - npm or npx
 - Claude Code CLI on `PATH`; `claude --version` should work
-- Claude Code authenticated locally for the default `anthropic` provider profile
+- A DeepSeek API key if you use `cc_delegate` without overriding `providerProfile`
+- Claude Code authenticated locally if you use the native `anthropic` provider profile
 - Codex or another MCP client that can start a stdio MCP server
 
-The default `anthropic` profile delegates to the native Claude Code CLI. Run Claude Code once interactively if local auth is not ready. It does not require `ANTHROPIC_AUTH_TOKEN` or `ANTHROPIC_API_KEY` to be set in the process environment, although existing Anthropic, Bedrock, Vertex, and proxy route variables are inherited when present.
+The native `anthropic` profile delegates to the native Claude Code CLI. Run Claude Code once interactively if local auth is not ready. It does not require `ANTHROPIC_AUTH_TOKEN` or `ANTHROPIC_API_KEY` to be set in the process environment, although existing Anthropic, Bedrock, Vertex, and proxy route variables are inherited when present.
 
 The `deepseek` provider profile requires one of these variables in the environment that starts Codex or the MCP server:
 

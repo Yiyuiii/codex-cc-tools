@@ -15,7 +15,7 @@ Claude Code task tools for Codex via MCP.
 
 - provider profile: which Claude Code backend to use, currently `anthropic` or `deepseek`
 - task: what Codex is asking for, currently `review` or `delegate`
-- authority: read-only review or destructive Claude Code execution
+- authority: read-only review or potentially destructive delegated Claude Code execution
 - result contract: structured output that Codex can inspect, synthesize, accept, reject, or defer
 
 ## Quickstart
@@ -25,9 +25,9 @@ Requirements:
 - Node.js 20 or newer
 - npm or npx
 - Claude Code CLI on `PATH`; `claude --version` should work
-- Claude Code authenticated locally for the default `anthropic` provider profile
+- A DeepSeek API key if you use `cc_delegate` without overriding `providerProfile`
+- Claude Code authenticated locally if you use the native `anthropic` provider profile
 - Codex or another MCP client that can launch a stdio MCP server
-- Optional: a DeepSeek API key if you want `providerProfile: "deepseek"`
 
 Install globally:
 
@@ -76,9 +76,9 @@ enabled_tools = ["cc_review", "cc_delegate"]
 
 ## Required Parameters
 
-For the default `anthropic` provider profile, this package delegates to the native `claude` command. Make sure `claude --version` works and run Claude Code once interactively if local auth is not ready. Claude Code can then use its own local authentication, profile, keychain, OAuth, or configured route.
+For the native `anthropic` provider profile, this package delegates to the native `claude` command. Make sure `claude --version` works and run Claude Code once interactively if local auth is not ready. Claude Code can then use its own local authentication, profile, keychain, OAuth, or configured route.
 
-Users do not need to provide `ANTHROPIC_AUTH_TOKEN` or `ANTHROPIC_API_KEY` as environment variables for the default profile. If Anthropic, Bedrock, Vertex, or proxy route variables are already present in the environment, they are inherited by the Claude Code subprocess; they are optional inputs, not required setup.
+Users do not need to provide `ANTHROPIC_AUTH_TOKEN` or `ANTHROPIC_API_KEY` as environment variables for the `anthropic` profile. If Anthropic, Bedrock, Vertex, or proxy route variables are already present in the environment, they are inherited by the Claude Code subprocess; they are optional inputs, not required setup.
 
 For DeepSeek, the MCP server process must start with one of these environment variables:
 
@@ -126,14 +126,14 @@ DeepSeek model inputs accepted by this package:
 | MCP tool | CLI command | Authority | Use it for |
 | --- | --- | --- | --- |
 | `cc_review` | `codex-cc-tools review` | Read-only product contract | Plan, diff, document, and adversarial review |
-| `cc_delegate` | `codex-cc-tools delegate` | Destructive Claude Code execution | Autonomous implementation, investigation, and verification from a Codex prompt |
+| `cc_delegate` | `codex-cc-tools delegate` | Destructive Claude Code execution | Autonomous delegated subtasks, including read-only investigation and writable implementation |
 
 Recommended Codex prompt:
 
 ```text
 For complex changes, use codex-cc-tools at useful checkpoints.
 Use cc_review before implementation and before finalizing a diff.
-Use cc_delegate when Codex has prepared the execution space and wants Claude Code to run a complete prompt.
+Use cc_delegate for independent delegated subtasks; make the prompt explicit about read-only or writable scope, and call it in parallel when scopes are independent.
 Treat Claude Code output as advisory evidence; Codex must accept, reject, or defer findings explicitly.
 ```
 
@@ -141,7 +141,7 @@ Treat Claude Code output as advisory evidence; Codex must accept, reject, or def
 
 All tools accept:
 
-- `providerProfile`: `anthropic` by default, or `deepseek`
+- `providerProfile`: `cc_review` defaults to `anthropic`; `cc_delegate` defaults to `deepseek`
 - `model`: `opus` by default; provider aliases are resolved per profile
 - `effort`: `max` by default; one of `low`, `medium`, `high`, `max`
 - `cwd`: task working directory where applicable
@@ -173,11 +173,17 @@ Review tasks are `review_plan`, `review_diff`, `review_doc`, and `adversarial_re
 }
 ```
 
-`cc_delegate` is marked destructive in MCP metadata and invokes Claude Code in
-non-interactive `bypassPermissions` mode for autonomous execution. It does not
-create, inspect, or enforce an execution space. If you want a worktree,
-container, temporary directory, branch policy, or command policy, prepare that
-outside this MCP tool and pass the final instruction through `prompt`.
+`cc_delegate` defaults to `providerProfile: "deepseek"` and is marked
+destructive in MCP metadata because it invokes Claude Code in non-interactive
+`bypassPermissions` mode for autonomous execution. It can be used for read-only
+investigation when the prompt says not to edit files, but the tool metadata must
+reflect its writable capability. It does not create, inspect, or enforce an
+execution space. If you want a worktree, container, temporary directory, branch
+policy, or command policy, prepare that outside this MCP tool and pass the final
+instruction through `prompt`.
+
+Multiple `cc_delegate` calls can be launched in parallel when the caller ensures
+they are read-only or their writable scopes do not overlap.
 
 ## CLI Examples
 
@@ -211,7 +217,7 @@ This package is designed for trusted local owner workflows. It does not make Cla
 
 | Setting | Default | Notes |
 | --- | --- | --- |
-| `providerProfile` | `anthropic` | Uses native Claude Code profile/auth. `deepseek` requires `DEEPSEEK_API_KEY` or `OPENAI_API_KEY_DEEPSEEK` in the MCP server environment. |
+| `providerProfile` | `cc_review`: `anthropic`; `cc_delegate`: `deepseek` | `anthropic` uses native Claude Code profile/auth. `deepseek` requires `DEEPSEEK_API_KEY` or `OPENAI_API_KEY_DEEPSEEK` in the MCP server environment. |
 | `model` | `opus` | In DeepSeek profile, `opus` and `sonnet` map to `deepseek-v4-pro[1m]`; `haiku` maps to `deepseek-v4-flash`. |
 | `effort` | `max` | Higher effort is slower and may cost more. On metered providers, use `medium` or `low` for routine checks. |
 | `cacheTtl` | `1h` | Adds Claude Code prompt-cache hint where supported; reported cache fields are provider/Claude Code estimates. |
@@ -237,7 +243,7 @@ Common issues:
 - DeepSeek says credentials are missing: set `DEEPSEEK_API_KEY` or `OPENAI_API_KEY_DEEPSEEK` in the environment that starts Codex or the MCP server.
 - Setting the key in a terminal is not enough if Codex was launched elsewhere. Restart Codex from an environment that contains the variable, or set a persistent OS-level user variable.
 - DeepSeek dashboard shows no requests: compare the returned diagnostic, for example `DeepSeek route target: api.deepseek.com; token source: OPENAI_API_KEY_DEEPSEEK.`, with the key/account you are monitoring.
-- Anthropic env vars are unset: this is fine for the default profile when native Claude Code auth works.
+- Anthropic env vars are unset: this is fine for the `anthropic` profile when native Claude Code auth works.
 - Reviews or delegated tasks time out: increase `tool_timeout_sec` in Codex config or the task `timeoutMs`.
 - MCP startup times out with `npx`: the first `npx` launch can be slow on a cold npm cache or slow network. Keep `startup_timeout_sec = 60` for `npx`, or use the global `codex-cc-tools-mcp` command with a shorter startup timeout.
 - Delegate does not enforce worktrees, paths, branches, or command allowlists: prepare the execution space before calling the tool, and put task details directly in `prompt`.
@@ -251,7 +257,7 @@ See [docs/troubleshooting.md](docs/troubleshooting.md).
 `codex-cc-tools` keeps that review workflow and adds one autonomous execution path:
 
 - `cc_review`: second-opinion review
-- `cc_delegate`: destructive Claude Code prompt execution
+- `cc_delegate`: prompt-driven Claude Code execution, read-only or writable by prompt scope
 
 Provider routing is orthogonal to the task. DeepSeek is not a separate task; it is selected with `providerProfile: "deepseek"`.
 

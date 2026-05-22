@@ -95,7 +95,7 @@ export const CcDelegateInputSchema = z.object({
   allowedPaths: PathListSchema,
   forbiddenPaths: PathListSchema,
   commandsAllowed: OptionalCommandListSchema,
-  providerProfile: ProviderProfileSchema.default("anthropic"),
+  providerProfile: ProviderProfileSchema.default("anthropic"), // Historical superseded plan; active thin delegate defaults to deepseek.
   model: NonEmptyStringSchema.default("opus"),
   effort: ClaudeEffortSchema.default("max"),
   timeoutMs: z.number().int().positive().max(3_600_000).default(900_000),
