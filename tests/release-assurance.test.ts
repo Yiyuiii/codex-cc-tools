@@ -110,7 +110,7 @@ describe("release assurance", () => {
   it("publishes through GitHub trusted publishing with next for prereleases", () => {
     const workflow = readFileSync(join(root, ".github", "workflows", "release.yml"), "utf8");
 
-    expect(workflow).not.toContain("workflow_dispatch");
+    expect(workflow).toContain("workflow_dispatch");
     expect(workflow).toContain("tags:");
     expect(workflow).toContain('"v*"');
     expect(workflow).toContain("npm_tag=next");

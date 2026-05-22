@@ -2,6 +2,7 @@ name: Release
 # Tag-triggered npm publishing via GitHub Actions OIDC.
 
 on:
+  workflow_dispatch:
   push:
     tags:
       - "v*"
