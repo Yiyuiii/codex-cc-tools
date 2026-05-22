@@ -10,14 +10,8 @@ describe("runLocalDelegate", () => {
 
     const result = await runLocalDelegate(
       {
-        task: "Edit the file.",
+        prompt: "Edit the file.",
         cwd: "D:\\Codes\\repo-worktree",
-        isolationKind: "git-worktree",
-        isolationEvidence: '{"branch":"codex/feature"}',
-        acceptanceCriteria: ["Tests pass."],
-        allowedPaths: "src,tests",
-        forbiddenPaths: "src/secrets",
-        commandsAllowed: ["npm test"],
         timeoutMs: "120000",
         maxContextChars: "5000",
         stream: false
@@ -33,13 +27,8 @@ describe("runLocalDelegate", () => {
 
     expect(result.ok).toBe(true);
     expect(observed).toMatchObject({
-      task: "Edit the file.",
+      prompt: "Edit the file.",
       cwd: "D:\\Codes\\repo-worktree",
-      isolation: { kind: "git-worktree", branch: "codex/feature" },
-      acceptanceCriteria: ["Tests pass."],
-      allowedPaths: ["src", "tests"],
-      forbiddenPaths: ["src/secrets"],
-      commandsAllowed: ["npm test"],
       timeoutMs: 120000,
       maxContextChars: 5000,
       stream: false

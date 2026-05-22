@@ -2,6 +2,11 @@
 
 This document records real writable `delegate` smoke runs.
 
+Historical note: this smoke was run against the prerelease safety-heavy
+`delegate` CLI. The active CLI now accepts `--prompt` plus process/model
+options; it no longer accepts `--task`, isolation, path-policy, command-policy,
+or acceptance-criteria flags.
+
 ## 2026-05-22 Linked Worktree Smoke
 
 - Branch under test: `codex/provider-runner-foundation`

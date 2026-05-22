@@ -19,9 +19,12 @@ That branch proved a DeepSeek-backed Claude Code provider profile can run in the
 
 ## What To Change
 
-- The public API should be task-first: `review`, `delegate`, `verify`, `research`.
+- The public API is task-first and intentionally small: `review` for external
+  critique and `delegate` for autonomous execution.
 - Provider selection should be orthogonal: `providerProfile: "anthropic" | "deepseek"`.
-- Writable delegation must have a separate task contract and safety policy.
+- Delegate must have a separate task contract from review, but it is now a thin
+  Claude Code bridge. Execution-space and command-policy decisions belong to
+  Codex or the caller environment, not this MCP tool.
 - Review remains read-only by product contract.
 
 ## Suggested Migration Order

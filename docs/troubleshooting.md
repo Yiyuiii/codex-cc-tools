@@ -37,22 +37,17 @@ If the backend dashboard is watching a different key or project than that token 
 
 The historical DeepSeek quality gate records `providerProfile: "deepseek"` and resolved DeepSeek model names, but it did not record the route host or token source. Treat those artifacts as quality evidence, not as independent billing-side proof. When billing-side proof matters, run a fresh smoke and compare the reported token source with the DeepSeek dashboard.
 
-## PowerShell JSON Arguments
+## Delegate Runs In The Wrong Place
 
-PowerShell may strip quotes from inline JSON passed to native commands. Prefer generating JSON and escaping quotes:
+`cc_delegate` does not create, inspect, or enforce execution spaces. If a task
+should run in a worktree, container, temporary directory, or guarded branch,
+prepare that outside the MCP tool and pass the resulting directory with `cwd`.
 
-```powershell
-$evidence = (@{ branch = "codex/feature" } | ConvertTo-Json -Compress).Replace('"','\"')
-codex-cc-tools delegate --isolation-evidence $evidence ...
-```
+## Delegate Needs More Instructions
 
-## Delegate Blocks On Dirty Workspace
-
-`delegate` requires a clean Git worktree unless the isolation evidence explicitly accepts dirty state. Prefer creating a linked worktree for writable tasks.
-
-## Delegate Blocks On Commands
-
-`commandsAllowed` must contain simple command prefixes. Commands with shell control syntax, redirects, pipes, subshells, package installs, remote mutation, or global Git config changes are blocked.
+`cc_delegate` has no separate `context`, `acceptanceCriteria`, path policy, or
+command policy fields. Put the full instruction, command sequence, expected
+output format, and verification request directly in `prompt`.
 
 ## Release Smoke Fails
 

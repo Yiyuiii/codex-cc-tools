@@ -2,7 +2,9 @@
 
 Checked on 2026-05-22 with `npm view` and the public documentation links below.
 
-This package intentionally stays narrower than generic Claude Code wrappers. Its durable niche is Codex-facing task contracts, provider-profile isolation per invocation, structured outputs, and explicit authority labels.
+This package intentionally stays narrower than generic Claude Code wrappers.
+Its durable niche is Codex-facing task contracts, provider-profile routing per
+invocation, structured outputs, and explicit authority labels.
 
 ## DeepSeek Claude Code Integration
 
@@ -34,9 +36,7 @@ These packages occupy adjacent space around Claude Code or coding-agent MCP work
 Use `codex-cc-tools` when Codex needs:
 
 - a stable review contract
-- read-only research
-- command-bounded verification
-- explicitly destructive writable delegation
+- autonomous delegation with explicit review and safety boundaries
 - provider-profile routing for Anthropic-compatible backends
 - structured results that Codex can synthesize without scraping an interactive transcript
 

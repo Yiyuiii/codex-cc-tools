@@ -1,7 +1,7 @@
-export type TaskSafety = "readonly" | "workspace-write" | "command-exec";
+export type TaskSafety = "readonly" | "destructive";
 
 export interface TaskDefinition {
-  name: "review" | "delegate" | "verify" | "research";
+  name: "review" | "delegate";
   capability: string;
   safety: TaskSafety;
 }
@@ -14,18 +14,8 @@ const TASK_DEFINITIONS: TaskDefinition[] = [
   },
   {
     name: "delegate",
-    capability: "Writable delegated subtasks executed by Claude Code",
-    safety: "workspace-write"
-  },
-  {
-    name: "verify",
-    capability: "Focused verification and reproduction tasks",
-    safety: "command-exec"
-  },
-  {
-    name: "research",
-    capability: "Read-only repository and context investigation",
-    safety: "readonly"
+    capability: "Thin Claude Code prompt execution for Codex",
+    safety: "destructive"
   }
 ];
 

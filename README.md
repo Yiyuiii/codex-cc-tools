@@ -1,63 +1,271 @@
 # codex-cc-tools
 
-Claude Code task tools for Codex.
+[English](README.md) | [简体中文](README.zh-CN.md)
 
-This repository is intended to grow beyond `codex-cc-reviewer` without overloading that package's stable review-only contract.
+[![npm version](https://img.shields.io/npm/v/codex-cc-tools.svg)](https://www.npmjs.com/package/codex-cc-tools)
+[![CI](https://github.com/Yiyuiii/codex-cc-tools/actions/workflows/ci.yml/badge.svg)](https://github.com/Yiyuiii/codex-cc-tools/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Node.js >=20](https://img.shields.io/badge/node-%3E%3D20-339933.svg)](https://nodejs.org/)
 
-## Current Shape
+Claude Code task tools for Codex via MCP.
 
-- `review`: read-only external review of plans, diffs, and documents.
-- `delegate`: explicit writable delegated subtasks executed by Claude Code.
-- `verify`: focused command verification and reproduction tasks.
-- `research`: read-only repository and context investigation.
+**Codex orchestrates. Claude Code executes. Codex decides.**
 
-Provider profiles are separate from tasks:
+`codex-cc-tools` is the successor-style tool family to the narrower `codex-cc-reviewer` package. It keeps the same Codex-facing architecture, but keeps the public surface intentionally small:
 
-- `anthropic`: default Claude Code provider.
-- `deepseek`: DeepSeek Anthropic-compatible provider. It has passed the current `review` quality gate; future task types still need their own gates.
+- provider profile: which Claude Code backend to use, currently `anthropic` or `deepseek`
+- task: what Codex is asking for, currently `review` or `delegate`
+- authority: read-only review or destructive Claude Code execution
+- result contract: structured output that Codex can inspect, synthesize, accept, reject, or defer
 
-## Current Implementation
+## Quickstart
 
-Implemented now:
+Requirements:
 
-- Provider-scoped Claude Code runner foundation.
-- DeepSeek provider environment routing without changing the caller shell profile.
-- Read-only `review` task with packet construction, git evidence routing, CLI command, and MCP tool name `cc_review`.
-- Read-only `research` task with explicit evidence output, optional git status, optional included file evidence, CLI command, and MCP tool name `cc_research`.
-- Command-exec `verify` task with explicit command allowlists, structured command/evidence output, CLI command, and MCP tool name `cc_verify`.
-- Workspace-write `delegate` task with explicit `cwd`, isolation evidence, destructive MCP metadata, runtime Git/worktree checks, command policy checks, structured changed-file output, CLI command, and MCP tool name `cc_delegate`.
-- Best-effort packet secret redaction is enabled by default; untracked file content is embedded only when explicitly requested.
-- Claude Code subprocess timeouts are runner-managed so the process tree is terminated before a timed-out task returns blocked.
+- Node.js 20 or newer
+- npm or npx
+- Claude Code CLI on `PATH`; `claude --version` should work
+- Claude Code authenticated locally for the default `anthropic` provider profile
+- Codex or another MCP client that can launch a stdio MCP server
+- Optional: a DeepSeek API key if you want `providerProfile: "deepseek"`
 
-Still planned:
-
-- Broader DeepSeek task-specific gates for future `research`, `verify`, and `delegate` behavior.
-- Stable release promotion after `next` beta validation.
-
-## Beta Install
-
-The first public transition channel is npm `next`:
+Install globally:
 
 ```bash
-npx --prefer-online -y codex-cc-tools@next --version
-npx --prefer-online -y codex-cc-tools@next doctor
-npx --prefer-online -y codex-cc-tools@next mcp
+npm install -g codex-cc-tools
+codex-cc-tools --version
+codex-cc-tools doctor
 ```
 
-For a persistent MCP configuration during beta validation, point the client command at `codex-cc-tools-mcp` from `codex-cc-tools@next`.
-
-## Commands
+Or run without global install:
 
 ```bash
-npm install
-npm test
-npm run build
-node dist/index.js doctor
-node dist/index.js review --task review_doc --context "Smoke review only." --model haiku
-node dist/index.js research --question "Where is provider routing implemented?"
-node dist/index.js verify --hypothesis "Build succeeds." --commands-allowed "npm run build"
-node dist/index.js delegate --task "Edit the file." --cwd "D:\\Codes\\repo-worktree" --isolation-kind git-worktree --isolation-evidence "{\"branch\":\"codex/feature\"}" --acceptance-criteria "Tests pass."
-node dist/index.js mcp
+npx --prefer-online -y codex-cc-tools@latest --version
+npx --prefer-online -y codex-cc-tools@latest doctor
 ```
 
-For `verify`, quote multi-word commands passed to `--commands-allowed`. The first command token must be a literal command name, not a wildcard. Do not embed credentials in allowed command strings because Claude Code receives them as subprocess arguments.
+For stable day-to-day use, pin the MCP config to a known version such as `codex-cc-tools@0.1.0`. Use `@latest` for quick setup and stable auto-updates. Use `@next` only for prerelease validation.
+
+Add the MCP server to `~/.codex/config.toml` or a trusted project `.codex/config.toml`. If your Codex build supports `enabled_tools`, keep the tool list restricted to the two tools shown here; otherwise omit that line and rely on the server's registered tool metadata.
+
+```toml
+[mcp_servers.codex_cc_tools]
+command = "npx"
+args = ["-y", "codex-cc-tools@latest", "mcp"]
+startup_timeout_sec = 60
+tool_timeout_sec = 900
+required = false
+enabled = true
+enabled_tools = ["cc_review", "cc_delegate"]
+```
+
+Restart Codex after changing MCP configuration.
+
+If `codex-cc-tools` is installed globally and available on `PATH`, this equivalent config also works:
+
+```toml
+[mcp_servers.codex_cc_tools]
+command = "codex-cc-tools-mcp"
+args = []
+startup_timeout_sec = 20
+tool_timeout_sec = 900
+required = false
+enabled = true
+enabled_tools = ["cc_review", "cc_delegate"]
+```
+
+## Required Parameters
+
+For the default `anthropic` provider profile, this package delegates to the native `claude` command. Make sure `claude --version` works and run Claude Code once interactively if local auth is not ready. Claude Code can then use its own local authentication, profile, keychain, OAuth, or configured route.
+
+Users do not need to provide `ANTHROPIC_AUTH_TOKEN` or `ANTHROPIC_API_KEY` as environment variables for the default profile. If Anthropic, Bedrock, Vertex, or proxy route variables are already present in the environment, they are inherited by the Claude Code subprocess; they are optional inputs, not required setup.
+
+For DeepSeek, the MCP server process must start with one of these environment variables:
+
+```bash
+export DEEPSEEK_API_KEY="your-deepseek-api-key"
+# or
+export OPENAI_API_KEY_DEEPSEEK="your-deepseek-api-key"
+```
+
+`DEEPSEEK_API_KEY` wins when both are present. Optional override:
+
+```bash
+DEEPSEEK_ANTHROPIC_BASE_URL=https://api.deepseek.com/anthropic
+```
+
+Most users should not set the override.
+
+The MCP server inherits the environment of the process that launches it. If Codex is launched from a GUI, it may not see variables exported only in a shell startup file. On Windows, set a persistent user variable such as `setx DEEPSEEK_API_KEY "your-deepseek-api-key"` and restart Codex. On macOS/Linux, either launch Codex from a shell where the key is exported or configure the variable in the desktop/session launcher that starts Codex.
+
+When `providerProfile: "deepseek"` is used, the package builds a per-child-process Claude Code route:
+
+- `ANTHROPIC_BASE_URL=https://api.deepseek.com/anthropic`
+- `ANTHROPIC_AUTH_TOKEN=<resolved DeepSeek key>`
+- `ANTHROPIC_DEFAULT_OPUS_MODEL=deepseek-v4-pro[1m]`
+- `ANTHROPIC_DEFAULT_SONNET_MODEL=deepseek-v4-pro[1m]`
+- `ANTHROPIC_DEFAULT_HAIKU_MODEL=deepseek-v4-flash`
+- `ANTHROPIC_SMALL_FAST_MODEL=deepseek-v4-flash`
+- `CLAUDE_CODE_SUBAGENT_MODEL=deepseek-v4-flash`
+- `CLAUDE_CODE_EFFORT_LEVEL=<requested effort>`
+
+The caller shell profile is not rewritten. Inherited Anthropic, Bedrock, Vertex, and provider-token route variables are removed from the DeepSeek child process before DeepSeek variables are injected. Returned output redacts the resolved provider token on a best-effort basis.
+
+DeepSeek model inputs accepted by this package:
+
+| Input model | DeepSeek model used |
+| --- | --- |
+| `opus` | `deepseek-v4-pro[1m]` |
+| `sonnet` | `deepseek-v4-pro[1m]` |
+| `haiku` | `deepseek-v4-flash` |
+| `deepseek-v4-pro[1m]` | `deepseek-v4-pro[1m]` |
+| `deepseek-v4-flash` | `deepseek-v4-flash` |
+
+## Tools
+
+| MCP tool | CLI command | Authority | Use it for |
+| --- | --- | --- | --- |
+| `cc_review` | `codex-cc-tools review` | Read-only product contract | Plan, diff, document, and adversarial review |
+| `cc_delegate` | `codex-cc-tools delegate` | Destructive Claude Code execution | Autonomous implementation, investigation, and verification from a Codex prompt |
+
+Recommended Codex prompt:
+
+```text
+For complex changes, use codex-cc-tools at useful checkpoints.
+Use cc_review before implementation and before finalizing a diff.
+Use cc_delegate when Codex has prepared the execution space and wants Claude Code to run a complete prompt.
+Treat Claude Code output as advisory evidence; Codex must accept, reject, or defer findings explicitly.
+```
+
+## Common MCP Inputs
+
+All tools accept:
+
+- `providerProfile`: `anthropic` by default, or `deepseek`
+- `model`: `opus` by default; provider aliases are resolved per profile
+- `effort`: `max` by default; one of `low`, `medium`, `high`, `max`
+- `cwd`: task working directory where applicable
+- `maxContextChars`: defaults to `120000`
+- `stream`: defaults to `true`
+- `cacheTtl`: defaults to `1h`; one of `5m`, `1h`
+
+`cc_review` key fields:
+
+```json
+{
+  "task": "review_diff",
+  "context": "Review the current diff for correctness regressions.",
+  "reviewFocus": "Prioritize confirmed bugs and missing tests.",
+  "includeGitDiff": true,
+  "includeGitStatus": true,
+  "providerProfile": "anthropic"
+}
+```
+
+Review tasks are `review_plan`, `review_diff`, `review_doc`, and `adversarial_review`. Optional fields include `originalGoal`, `codexSummary`, `acceptanceCriteria`, `knownRisks`, `testsRun`, `permissionMode`, `tools`, `includeUntrackedContent`, and `redactSecrets`.
+
+`cc_delegate` key fields:
+
+```json
+{
+  "prompt": "Update README examples for the new provider profile, then report changed files and any commands run.",
+  "cwd": "/path/to/repo"
+}
+```
+
+`cc_delegate` is marked destructive in MCP metadata and invokes Claude Code in
+non-interactive `bypassPermissions` mode for autonomous execution. It does not
+create, inspect, or enforce an execution space. If you want a worktree,
+container, temporary directory, branch policy, or command policy, prepare that
+outside this MCP tool and pass the final instruction through `prompt`.
+
+## CLI Examples
+
+```bash
+codex-cc-tools doctor
+codex-cc-tools review --task review_doc --context "Smoke review only." --model haiku
+```
+
+PowerShell `delegate` example:
+
+```powershell
+codex-cc-tools delegate --prompt "Edit README, then summarize changed files and checks run." --cwd "D:\Codes\repo"
+```
+
+DeepSeek CLI smoke:
+
+```bash
+export DEEPSEEK_API_KEY="your-deepseek-api-key"
+codex-cc-tools review \
+  --provider-profile deepseek \
+  --model deepseek-v4-flash \
+  --task review_doc \
+  --context "DeepSeek route smoke only. Report whether this review invocation works."
+```
+
+Quote exact DeepSeek model names that contain brackets when passing them in a shell, for example `--model 'deepseek-v4-pro[1m]'`. The aliases `opus`, `sonnet`, and `haiku` avoid this issue.
+
+## Safety And Configuration
+
+This package is designed for trusted local owner workflows. It does not make Claude Code safe for untrusted repositories by itself.
+
+| Setting | Default | Notes |
+| --- | --- | --- |
+| `providerProfile` | `anthropic` | Uses native Claude Code profile/auth. `deepseek` requires `DEEPSEEK_API_KEY` or `OPENAI_API_KEY_DEEPSEEK` in the MCP server environment. |
+| `model` | `opus` | In DeepSeek profile, `opus` and `sonnet` map to `deepseek-v4-pro[1m]`; `haiku` maps to `deepseek-v4-flash`. |
+| `effort` | `max` | Higher effort is slower and may cost more. On metered providers, use `medium` or `low` for routine checks. |
+| `cacheTtl` | `1h` | Adds Claude Code prompt-cache hint where supported; reported cache fields are provider/Claude Code estimates. |
+| `redactSecrets` | `true` for review packet evidence | Best-effort only; avoid sending secrets in prompts, files, and command output. |
+| `permissionMode` for review | `bypassPermissions` | Disables Claude Code's interactive permission prompts. Use the default only in repositories you own; use narrower tools/modes for shared or sensitive repos. |
+| `cc_delegate` tools | Claude Code non-interactive execution | Takes a complete prompt and runs Claude Code with `bypassPermissions`. Execution-space policy is external. |
+
+For the full provider boundary, see [docs/security.md](docs/security.md). For all schemas, see [docs/tool-contract.md](docs/tool-contract.md).
+
+## Troubleshooting
+
+Run:
+
+```bash
+codex-cc-tools doctor
+```
+
+Common issues:
+
+- `claude` is not found: install Claude Code and make sure it is on `PATH`.
+- Claude is not authenticated: run Claude Code interactively once and complete auth.
+- Codex does not show the tools: restart Codex after changing MCP config.
+- DeepSeek says credentials are missing: set `DEEPSEEK_API_KEY` or `OPENAI_API_KEY_DEEPSEEK` in the environment that starts Codex or the MCP server.
+- Setting the key in a terminal is not enough if Codex was launched elsewhere. Restart Codex from an environment that contains the variable, or set a persistent OS-level user variable.
+- DeepSeek dashboard shows no requests: compare the returned diagnostic, for example `DeepSeek route target: api.deepseek.com; token source: OPENAI_API_KEY_DEEPSEEK.`, with the key/account you are monitoring.
+- Anthropic env vars are unset: this is fine for the default profile when native Claude Code auth works.
+- Reviews or delegated tasks time out: increase `tool_timeout_sec` in Codex config or the task `timeoutMs`.
+- MCP startup times out with `npx`: the first `npx` launch can be slow on a cold npm cache or slow network. Keep `startup_timeout_sec = 60` for `npx`, or use the global `codex-cc-tools-mcp` command with a shorter startup timeout.
+- Delegate does not enforce worktrees, paths, branches, or command allowlists: prepare the execution space before calling the tool, and put task details directly in `prompt`.
+
+See [docs/troubleshooting.md](docs/troubleshooting.md).
+
+## How Is This Different From codex-cc-reviewer?
+
+`codex-cc-reviewer` exposes one narrow review tool, `cc_review`.
+
+`codex-cc-tools` keeps that review workflow and adds one autonomous execution path:
+
+- `cc_review`: second-opinion review
+- `cc_delegate`: destructive Claude Code prompt execution
+
+Provider routing is orthogonal to the task. DeepSeek is not a separate task; it is selected with `providerProfile: "deepseek"`.
+
+## Documentation
+
+- [Installation](docs/installation.md)
+- [Tool contract](docs/tool-contract.md)
+- [Security](docs/security.md)
+- [Delegate boundary](docs/delegate-safety.md)
+- [Troubleshooting](docs/troubleshooting.md)
+- [Architecture](docs/architecture.md)
+- [Prior art](docs/prior-art.md)
+- [Examples](examples)
+
+## License
+
+[MIT](LICENSE)

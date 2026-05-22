@@ -7,15 +7,8 @@ import {
 import { runClaudeDelegate } from "../tasks/delegate/tool.js";
 
 export interface LocalDelegateOptions {
-  task: string;
-  cwd: string;
-  isolationKind: "git-worktree" | "git-branch" | "container";
-  isolationEvidence?: string;
-  acceptanceCriteria: string | string[];
-  context?: string;
-  allowedPaths?: string | string[];
-  forbiddenPaths?: string | string[];
-  commandsAllowed?: string | string[];
+  prompt: string;
+  cwd?: string;
   providerProfile?: string;
   model?: string;
   effort?: string;
@@ -49,17 +42,7 @@ export async function runLocalDelegate(
 }
 
 function normalizeDelegateOptions(options: LocalDelegateOptions): Record<string, unknown> {
-  const isolationEvidence = parseIsolationEvidence(options.isolationEvidence);
-  const normalized: Record<string, unknown> = {
-    ...options,
-    isolation: {
-      kind: options.isolationKind,
-      ...isolationEvidence
-    }
-  };
-
-  delete normalized.isolationKind;
-  delete normalized.isolationEvidence;
+  const normalized: Record<string, unknown> = { ...options };
 
   if (typeof options.timeoutMs === "string") {
     normalized.timeoutMs = Number(options.timeoutMs);
@@ -70,13 +53,4 @@ function normalizeDelegateOptions(options: LocalDelegateOptions): Record<string,
   }
 
   return normalized;
-}
-
-function parseIsolationEvidence(value: string | undefined): Record<string, unknown> {
-  if (!value?.trim()) return {};
-  const parsed = JSON.parse(value) as unknown;
-  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-    throw new Error("--isolation-evidence must be a JSON object.");
-  }
-  return parsed as Record<string, unknown>;
 }

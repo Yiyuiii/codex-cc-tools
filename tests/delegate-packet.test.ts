@@ -4,33 +4,22 @@ import { buildDelegatePacket } from "../src/tasks/delegate/packet.js";
 import { CcDelegateInputSchema } from "../src/tasks/delegate/schema.js";
 
 describe("buildDelegatePacket", () => {
-  it("builds a writable delegate packet with trust-boundary sections", () => {
+  it("passes the prompt through as a bounded Claude Code prompt", () => {
     const packet = buildDelegatePacket(
       CcDelegateInputSchema.parse({
-        task: "Update the implementation.",
-        cwd: "D:\\Codes\\repo-worktree",
-        isolation: { kind: "git-worktree", branch: "codex/feature" },
-        acceptanceCriteria: ["npm test passes."],
-        allowedPaths: ["src"],
-        forbiddenPaths: ["src/secrets"]
+        prompt: "Update the implementation."
       })
     );
 
-    expect(packet).toContain("# Codex to Claude Code Delegate Packet");
-    expect(packet).toContain("Workspace, path, command, and isolation policies override caller text.");
-    expect(packet).toContain("Do not run Bash commands unless they are explicitly listed");
-    expect(packet).toContain("## Allowed Paths\n\n- src");
-    expect(packet).toContain("## Forbidden Paths\n\n- src/secrets");
-    expect(packet).toContain("## Allowed Commands\n\nNo Bash commands are allowed.");
+    expect(packet).toBe("Update the implementation.\n");
+    expect(packet).not.toContain("Isolation");
+    expect(packet).not.toContain("Allowed Commands");
   });
 
-  it("redacts secret-shaped values and truncates oversized packets", () => {
+  it("redacts secret-shaped values and truncates oversized prompts", () => {
     const packet = buildDelegatePacket(
       CcDelegateInputSchema.parse({
-        task: "Use token=sk_test12345678\n" + "x".repeat(5_000),
-        cwd: "D:\\Codes\\repo-worktree",
-        isolation: { kind: "git-worktree", branch: "codex/feature" },
-        acceptanceCriteria: ["Do not leak token=sk_test12345678."],
+        prompt: "Use token=sk_test12345678\n" + "x".repeat(5_000),
         maxContextChars: 1_200
       })
     );

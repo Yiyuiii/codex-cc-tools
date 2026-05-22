@@ -5,10 +5,7 @@ import { DELEGATE_STDIN_PROMPT, runClaudeDelegate } from "../src/tasks/delegate/
 import type { CcDelegateInput } from "../src/tasks/delegate/schema.js";
 
 const baseInput: CcDelegateInput = {
-  task: "Edit the requested file.",
-  cwd: "D:\\Codes\\repo-worktree",
-  isolation: { kind: "git-worktree", branch: "codex/feature" },
-  acceptanceCriteria: ["Tests pass."],
+  prompt: "Edit the requested file.",
   providerProfile: "anthropic",
   model: "opus",
   effort: "max",
@@ -19,32 +16,9 @@ const baseInput: CcDelegateInput = {
 };
 
 describe("runClaudeDelegate", () => {
-  it("returns blocked before Claude Code when policy fails", async () => {
-    let executed = false;
-    const result = await runClaudeDelegate(
-      { ...baseInput, cwd: "C:\\" },
-      {
-        policy: { platform: "win32" },
-        execute: async () => {
-          executed = true;
-          throw new Error("should not execute");
-        },
-        now: fakeClock([1, 2])
-      }
-    );
-
-    expect(executed).toBe(false);
-    expect(result.ok).toBe(false);
-    expect(result.status).toBe("blocked");
-    expect(result.diagnostics.join("\n")).toContain("unsafe workspace");
-  });
-
-  it("runs Claude Code with writable authority and maps structured output", async () => {
+  it("passes Codex prompt directly to Claude Code and maps structured output", async () => {
     let observed: Parameters<ClaudeExecutor> | undefined;
-    const result = await runClaudeDelegate(
-      { ...baseInput, commandsAllowed: ["npm test"] },
-      {
-        policy: { git: { isLinkedWorktree: true, isBare: false, dirtyStatus: [] } },
+    const result = await runClaudeDelegate(baseInput, {
         execute: async (...args) => {
           observed = args;
           return {
@@ -64,8 +38,6 @@ describe("runClaudeDelegate", () => {
             exitCode: 0
           };
         },
-        buildPacket: async () => "PACKET",
-        getChangedPaths: async () => ["src/index.ts"],
         now: fakeClock([1, 11])
       }
     );
@@ -73,33 +45,61 @@ describe("runClaudeDelegate", () => {
     expect(result.ok).toBe(true);
     expect(result.status).toBe("succeeded");
     expect(observed?.[1]).toContain(DELEGATE_STDIN_PROMPT);
-    expect(observed?.[1]).toContain("--permission-mode");
-    expect(observed?.[1]).toContain("acceptEdits");
-    expect(observed?.[1]).not.toContain("--dangerously-skip-permissions");
-    expect(observed?.[1]).toContain("Bash(npm test)");
+    expect(observed?.[1]).toContain("bypassPermissions");
+    expect(observed?.[1]).toContain("--dangerously-skip-permissions");
+    expect(observed?.[2]?.input).toBe("Edit the requested file.\n");
+    expect(observed?.[2]?.cwd).toBe(process.cwd());
+    expect(observed?.[1]).not.toContain("--allowedTools");
   });
 
-  it("blocks malformed structured delegate output", async () => {
+  it("uses cwd only as the Claude Code subprocess working directory", async () => {
+    let observedOptions: Parameters<ClaudeExecutor>[2] | undefined;
+    await runClaudeDelegate(
+      { ...baseInput, cwd: "D:\\Codes\\repo" },
+      {
+        execute: async (...args) => {
+          observedOptions = args[2];
+          return {
+            stdout: JSON.stringify({
+              result: "Done.",
+              structured_output: {
+                status: "succeeded",
+                summary: "Done.",
+                filesChanged: [],
+                commandsRun: [],
+                verification: [],
+                risks: [],
+                diagnostics: []
+              }
+            }),
+            stderr: "",
+            exitCode: 0
+          };
+        },
+        now: fakeClock([1, 2])
+      }
+    );
+
+    expect(observedOptions?.cwd).toBe("D:\\Codes\\repo");
+  });
+
+  it("returns failed for malformed structured delegate output", async () => {
     const result = await runClaudeDelegate(baseInput, {
-      policy: { git: { isLinkedWorktree: true, isBare: false } },
       execute: async () => ({
         stdout: JSON.stringify({ result: "Plain output.", structured_output: { summary: "missing" } }),
         stderr: "",
         exitCode: 0
       }),
-      buildPacket: async () => "PACKET",
-      getChangedPaths: async () => [],
       now: fakeClock([1, 2])
     });
 
     expect(result.ok).toBe(false);
-    expect(result.status).toBe("blocked");
+    expect(result.status).toBe("failed");
     expect(result.diagnostics.join("\n")).toContain("structured delegate output");
   });
 
   it("redacts secrets from structured delegate output", async () => {
     const result = await runClaudeDelegate(baseInput, {
-      policy: { git: { isLinkedWorktree: true, isBare: false } },
       execute: async () => ({
         stdout: JSON.stringify({
           result: "token=sk_test12345678",
@@ -118,8 +118,6 @@ describe("runClaudeDelegate", () => {
         stderr: "",
         exitCode: 0
       }),
-      buildPacket: async () => "PACKET",
-      getChangedPaths: async () => ["src/index.ts"],
       now: fakeClock([1, 2])
     });
 
@@ -129,400 +127,36 @@ describe("runClaudeDelegate", () => {
     expect(serialized).toContain("[REDACTED]");
   });
 
-  it("blocks post-run changed paths that resolve outside the workspace", async () => {
-    const result = await runClaudeDelegate(
-      {
-        ...baseInput,
-        allowedPaths: ["linked"]
-      },
-      {
-        policy: {
-          git: { isLinkedWorktree: true, isBare: false },
-          platform: "win32",
-          realpath: (value) =>
-            value.endsWith("linked\\secret.txt") ? "C:\\Users\\Ada\\secret.txt" : value
-        },
-        execute: async () => ({
-          stdout: JSON.stringify({
-            result: "Changed file.",
-            structured_output: {
-              status: "succeeded",
-              summary: "Changed file.",
-              filesChanged: ["linked\\secret.txt"],
-              commandsRun: [],
-              verification: [],
-              risks: [],
-              diagnostics: []
-            }
-          }),
-          stderr: "",
-          exitCode: 0
-        }),
-        buildPacket: async () => "PACKET",
-        getChangedPaths: async () => ["linked\\secret.txt"],
-        now: fakeClock([1, 2])
-      }
-    );
-
-    expect(result.ok).toBe(false);
-    expect(result.status).toBe("blocked");
-    expect(result.diagnostics.join("\n")).toContain("outside workspace");
-  });
-
-  it("uses runtime-collected realpath checks for post-run changed paths", async () => {
-    const result = await runClaudeDelegate(
-      {
-        ...baseInput,
-        allowedPaths: ["linked"]
-      },
-      {
-        collectPolicyDeps: async () => ({
-          platform: "win32",
-          realpath: (value) =>
-            value.endsWith("linked\\secret.txt") ? "C:\\Users\\Ada\\secret.txt" : value,
-          git: { isLinkedWorktree: true, isBare: false }
-        }),
-        execute: async () => ({
-          stdout: JSON.stringify({
-            result: "Changed file.",
-            structured_output: {
-              status: "succeeded",
-              summary: "Changed file.",
-              filesChanged: ["linked\\secret.txt"],
-              commandsRun: [],
-              verification: [],
-              risks: [],
-              diagnostics: []
-            }
-          }),
-          stderr: "",
-          exitCode: 0
-        }),
-        buildPacket: async () => "PACKET",
-        getChangedPaths: async () => ["linked\\secret.txt"],
-        now: fakeClock([1, 2])
-      }
-    );
-
-    expect(result.ok).toBe(false);
-    expect(result.status).toBe("blocked");
-    expect(result.diagnostics.join("\n")).toContain("outside workspace");
-  });
-
-  it("downgrades over-reported changed paths to partial", async () => {
-    const result = await runClaudeDelegate(baseInput, {
-      policy: { git: { isLinkedWorktree: true, isBare: false } },
-      execute: async () => ({
-        stdout: JSON.stringify({
-          result: "Reported change.",
-          structured_output: {
-            status: "succeeded",
-            summary: "Reported change.",
-            filesChanged: ["src/index.ts"],
-            commandsRun: [],
-            verification: [],
-            risks: [],
-            diagnostics: []
-          }
-        }),
-        stderr: "",
-        exitCode: 0
-      }),
-      buildPacket: async () => "PACKET",
-      getChangedPaths: async () => [],
-      now: fakeClock([1, 2])
-    });
-
-    expect(result.ok).toBe(true);
-    expect(result.status).toBe("partial");
-    expect(result.diagnostics.join("\n")).toContain("reported paths not observed");
-  });
-
-  it("compares post-run changed paths against the pre-run dirty snapshot", async () => {
-    const result = await runClaudeDelegate(
-      {
-        ...baseInput,
-        isolation: { kind: "git-worktree", branch: "codex/feature", acceptDirty: true }
-      },
-      {
-        policy: {
-          git: {
-            isLinkedWorktree: true,
-            isBare: false,
-            dirtyStatus: ["preexisting.txt"]
-          }
-        },
-        execute: async () => ({
-          stdout: JSON.stringify({
-            result: "Changed file.",
-            structured_output: {
-              status: "succeeded",
-              summary: "Changed file.",
-              filesChanged: ["created.txt"],
-              commandsRun: [],
-              verification: [],
-              risks: [],
-              diagnostics: []
-            }
-          }),
-          stderr: "",
-          exitCode: 0
-        }),
-        buildPacket: async () => "PACKET",
-        getChangedPaths: async () => ["preexisting.txt", "created.txt"],
-        now: fakeClock([1, 2])
-      }
-    );
-
-    expect(result.ok).toBe(true);
-    expect(result.status).toBe("partial");
-    expect(result.diagnostics.join("\n")).toContain("already dirty before delegate ran");
-  });
-
-  it("downgrades reports for pre-existing dirty paths to partial because git status cannot prove the delegate changed them", async () => {
-    const result = await runClaudeDelegate(
-      {
-        ...baseInput,
-        isolation: { kind: "git-worktree", branch: "codex/feature", acceptDirty: true }
-      },
-      {
-        policy: {
-          git: {
-            isLinkedWorktree: true,
-            isBare: false,
-            dirtyStatus: ["preexisting.txt"]
-          }
-        },
-        execute: async () => ({
-          stdout: JSON.stringify({
-            result: "Reported file.",
-            structured_output: {
-              status: "succeeded",
-              summary: "Reported file.",
-              filesChanged: ["preexisting.txt"],
-              commandsRun: [],
-              verification: [],
-              risks: [],
-              diagnostics: []
-            }
-          }),
-          stderr: "",
-          exitCode: 0
-        }),
-        buildPacket: async () => "PACKET",
-        getChangedPaths: async () => ["preexisting.txt"],
-        now: fakeClock([1, 2])
-      }
-    );
-
-    expect(result.ok).toBe(true);
-    expect(result.status).toBe("partial");
-    expect(result.diagnostics.join("\n")).toContain("already dirty before delegate ran");
-  });
-
-  it("downgrades unreported pre-existing dirty paths observed after the run to partial", async () => {
-    const result = await runClaudeDelegate(
-      {
-        ...baseInput,
-        isolation: { kind: "git-worktree", branch: "codex/feature", acceptDirty: true }
-      },
-      {
-        policy: {
-          git: {
-            isLinkedWorktree: true,
-            isBare: false,
-            dirtyStatus: ["preexisting.txt"]
-          }
-        },
-        execute: async () => ({
-          stdout: JSON.stringify({
-            result: "Changed file.",
-            structured_output: {
-              status: "succeeded",
-              summary: "Changed file.",
-              filesChanged: ["created.txt"],
-              commandsRun: [],
-              verification: [],
-              risks: [],
-              diagnostics: []
-            }
-          }),
-          stderr: "",
-          exitCode: 0
-        }),
-        buildPacket: async () => "PACKET",
-        getChangedPaths: async () => ["preexisting.txt", "created.txt"],
-        now: fakeClock([1, 2])
-      }
-    );
-
-    expect(result.ok).toBe(true);
-    expect(result.status).toBe("partial");
-    expect(result.diagnostics.join("\n")).toContain("already dirty before delegate ran");
-  });
-
-  it("downgrades when pre-run dirty snapshot is unavailable", async () => {
-    const result = await runClaudeDelegate(baseInput, {
-      policy: {
-        git: {
-          isLinkedWorktree: true,
-          isBare: false
-        }
-      },
-      execute: async () => ({
-        stdout: JSON.stringify({
-          result: "Changed file.",
-          structured_output: {
-            status: "succeeded",
-            summary: "Changed file.",
-            filesChanged: ["src/index.ts"],
-            commandsRun: [],
-            verification: [],
-            risks: [],
-            diagnostics: []
-          }
-        }),
-        stderr: "",
-        exitCode: 0
-      }),
-      buildPacket: async () => "PACKET",
-      getChangedPaths: async () => ["src/index.ts"],
-      now: fakeClock([1, 2])
-    });
-
-    expect(result.ok).toBe(true);
-    expect(result.status).toBe("partial");
-    expect(result.diagnostics.join("\n")).toContain("pre-run dirty snapshot unavailable");
-  });
-
-  it("downgrades absolute reports for pre-existing dirty relative paths to partial", async () => {
-    const result = await runClaudeDelegate(
-      {
-        ...baseInput,
-        isolation: { kind: "git-worktree", branch: "codex/feature", acceptDirty: true }
-      },
-      {
-        policy: {
-          platform: "win32",
-          git: {
-            isLinkedWorktree: true,
-            isBare: false,
-            dirtyStatus: ["preexisting.txt"]
-          }
-        },
-        execute: async () => ({
-          stdout: JSON.stringify({
-            result: "Reported file.",
-            structured_output: {
-              status: "succeeded",
-              summary: "Reported file.",
-              filesChanged: ["D:\\Codes\\repo-worktree\\preexisting.txt"],
-              commandsRun: [],
-              verification: [],
-              risks: [],
-              diagnostics: []
-            }
-          }),
-          stderr: "",
-          exitCode: 0
-        }),
-        buildPacket: async () => "PACKET",
-        getChangedPaths: async () => ["preexisting.txt"],
-        now: fakeClock([1, 2])
-      }
-    );
-
-    expect(result.ok).toBe(true);
-    expect(result.status).toBe("partial");
-    expect(result.diagnostics.join("\n")).toContain("already dirty before delegate ran");
-  });
-
-  it("matches reported and observed paths with Windows separator and case normalization", async () => {
-    const result = await runClaudeDelegate(
-      {
-        ...baseInput,
-        isolation: { kind: "git-worktree", branch: "codex/feature" }
-      },
-      {
-        policy: {
-          platform: "win32",
-          git: { isLinkedWorktree: true, isBare: false, dirtyStatus: [] }
-        },
-        execute: async () => ({
-          stdout: JSON.stringify({
-            result: "Changed file.",
-            structured_output: {
-              status: "succeeded",
-              summary: "Changed file.",
-              filesChanged: ["SRC\\INDEX.TS"],
-              commandsRun: [],
-              verification: [],
-              risks: [],
-              diagnostics: []
-            }
-          }),
-          stderr: "",
-          exitCode: 0
-        }),
-        buildPacket: async () => "PACKET",
-        getChangedPaths: async () => ["src/index.ts"],
-        now: fakeClock([1, 2])
-      }
-    );
-
-    expect(result.ok).toBe(true);
-    expect(result.status).toBe("succeeded");
-    expect(result.diagnostics.join("\n")).not.toContain("not reported");
-    expect(result.diagnostics.join("\n")).not.toContain("not observed");
-  });
-
   it("returns provider configuration failures as blocked delegation", async () => {
     const result = await runClaudeDelegate(
       { ...baseInput, providerProfile: "deepseek" },
       {
-        policy: { git: { isLinkedWorktree: true, isBare: false } },
         sourceEnv: {},
-        buildPacket: async () => "PACKET",
         now: fakeClock([1, 2])
       }
     );
 
     expect(result.ok).toBe(false);
-    expect(result.status).toBe("blocked");
+    expect(result.status).toBe("failed");
     expect(result.summary).toContain("DEEPSEEK_API_KEY");
+    expect(result.diagnostics.join("\n")).not.toContain("cache and cost fields");
   });
 
-  it("blocks structured command claims outside the delegate command policy", async () => {
-    const result = await runClaudeDelegate(
-      { ...baseInput, commandsAllowed: ["npm test"] },
-      {
-        policy: { git: { isLinkedWorktree: true, isBare: false } },
-        execute: async () => ({
-          stdout: JSON.stringify({
-            result: "Ran command.",
-            structured_output: {
-              status: "succeeded",
-              summary: "Ran command.",
-              filesChanged: [],
-              commandsRun: [{ command: "git push origin main", exitCode: 0, summary: "pushed" }],
-              verification: [],
-              risks: [],
-              diagnostics: []
-            }
-          }),
-          stderr: "",
-          exitCode: 0
-        }),
-        buildPacket: async () => "PACKET",
-        getChangedPaths: async () => [],
-        now: fakeClock([1, 2])
-      }
-    );
+  it("returns cancelled without starting Claude Code when the signal is already aborted", async () => {
+    const controller = new AbortController();
+    controller.abort();
+
+    const result = await runClaudeDelegate(baseInput, {
+      signal: controller.signal,
+      execute: async () => {
+        throw new Error("execute should not be called");
+      },
+      now: fakeClock([1, 2])
+    });
 
     expect(result.ok).toBe(false);
-    expect(result.status).toBe("blocked");
-    expect(result.diagnostics.join("\n")).toContain("reported command is not allowed");
-    expect(result.diagnostics.join("\n")).toContain("mutates remotes");
+    expect(result.status).toBe("cancelled");
+    expect(result.summary).toContain("cancelled");
   });
 });
 

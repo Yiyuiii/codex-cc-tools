@@ -76,11 +76,9 @@ async function checkMcpToolRegistration() {
     }
   };
   module.registerCcReviewTool(server);
-  module.registerCcResearchTool(server);
-  module.registerCcVerifyTool(server);
   module.registerCcDelegateTool(server);
 
-  for (const expected of ["cc_review", "cc_research", "cc_verify", "cc_delegate"]) {
+  for (const expected of ["cc_review", "cc_delegate"]) {
     const registration = registrations.get(expected);
     if (!registration) {
       fail(`MCP tool registration smoke missing ${expected}`);
@@ -96,8 +94,6 @@ async function checkMcpToolRegistration() {
 
   const expectedAnnotations = new Map([
     ["cc_review", { readOnlyHint: true, destructiveHint: false }],
-    ["cc_research", { readOnlyHint: true, destructiveHint: false }],
-    ["cc_verify", { readOnlyHint: false, destructiveHint: false }],
     ["cc_delegate", { readOnlyHint: false, destructiveHint: true }]
   ]);
   for (const [name, expected] of expectedAnnotations) {

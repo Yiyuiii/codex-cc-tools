@@ -2,29 +2,47 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+## Post-0.1.0 Direction Update
+
+On 2026-05-22, after the first stable publication, the maintainer decided that
+separate read-only investigation and command-verification tasks are unnecessary
+public tools. The active product direction is:
+
+- keep `cc_review` for high-signal external critique;
+- keep `cc_delegate` for autonomous work by passing one complete prompt to
+  Claude Code; execution-space policy stays outside the MCP tool;
+- remove the separate investigation and verification MCP/CLI entries from the
+  current package surface.
+
+The original milestones below remain as historical execution context. Do not
+treat their separate investigation/verification task entries as current product
+requirements.
+
 **Goal:** Complete `codex-cc-tools` as a Codex-facing MCP and CLI tool family that can ask Claude Code to run bounded tasks through provider profiles such as Anthropic and DeepSeek, returning structured results that Codex can use directly.
 
-**Architecture:** Keep provider profiles, task contracts, and execution policy orthogonal. Migrate the mature `codex-cc-reviewer` read-only review bridge first, then add command verification and repository research, and only then implement writable delegation behind explicit safety controls.
+**Architecture:** Keep provider profiles and task contracts orthogonal. The
+active product surface is `review` plus thin `delegate`; historical milestones
+below describe earlier prerelease work and should not be treated as current
+requirements when they mention separate investigation, verification, or
+execution-space policy.
 
 **Tech Stack:** TypeScript, Node.js 20+, Commander, MCP TypeScript SDK, Zod, Execa, Vitest, tsup, Claude Code subprocesses.
 
 ---
 
-## Current Baseline
+## Historical Baseline
 
 - Current branch: `codex/provider-runner-foundation`
 - Initial commit: `ff7de35 chore: initialize codex cc tools`
-- Implemented now:
+- Implemented during the original completion run:
   - `src/tasks/registry.ts`: task names and coarse safety labels.
   - `src/providers/*`: provider profiles, model aliases, environment isolation, and redaction.
   - `src/core/claude-runner.ts`: Claude Code subprocess runner, stream parser, and runner-managed process-tree timeout cleanup.
   - `src/tasks/review/*`: read-only review task, CLI `review`, and MCP `cc_review`.
-  - `src/tasks/research/*`: read-only research task, CLI `research`, and MCP `cc_research`.
-  - `src/tasks/verify/*`: command-exec verification task, CLI `verify`, and MCP `cc_verify`.
   - DeepSeek has passed the current `review` quality gate; future tasks still need task-specific DeepSeek gates.
-  - Tests for provider env, runner, review, research, CLI, MCP, and formatting.
-- Not implemented yet:
-  - No install, release, or real Claude Code smoke workflow.
+  - Tests for provider env, runner, review, CLI, MCP, and formatting.
+- Removed after publication:
+  - Separate investigation and command-verification task entries.
 
 Source migration reference remains read-only unless a task explicitly says otherwise:
 
@@ -53,7 +71,9 @@ The durable niche for this repository is narrower:
 - Codex-oriented task contracts.
 - Structured, bounded outputs designed for Codex synthesis.
 - Provider-profile isolation per invocation.
-- Explicit review/verify/research/delegate task separation.
+- Two active public task contracts: `review` for critique and `delegate` for
+  autonomous work from one complete prompt. Execution-space and command policy
+  are external Codex/user responsibilities, not MCP tool fields.
 - Conservative migration from a proven review bridge.
 
 External references checked on 2026-05-22:
@@ -65,15 +85,15 @@ External references checked on 2026-05-22:
 
 ## Target Module Layout
 
-The final repository should converge toward this layout:
+This historical target layout has been superseded by the post-0.1.0 two-tool
+surface. Current implementations should keep only the active `review` and
+`delegate` task families.
 
 ```text
 src/
   cli/
     doctor.ts
     review.ts
-    verify.ts
-    research.ts
     delegate.ts
   core/
     claude-runner.ts
@@ -93,14 +113,6 @@ src/
       schema.ts
       packet.ts
       format.ts
-      tool.ts
-    verify/
-      schema.ts
-      packet.ts
-      tool.ts
-    research/
-      schema.ts
-      packet.ts
       tool.ts
     delegate/
       schema.ts
@@ -287,21 +299,17 @@ git add docs src tests
 git commit -m "docs: record deepseek review reliability gate"
 ```
 
-## Milestone 4: Add `research` Task
+## Archived Milestone 4: Add `research` Task
+
+Superseded after `v0.1.0`: the separate public investigation task was removed.
+Keep this section only as migration history; do not recreate these files from
+this plan.
 
 **Outcome:** Codex can ask Claude Code for bounded read-only repository investigation and receive structured findings without mixing that contract into review.
 
-**Files:**
-
-- Create: `src/tasks/research/schema.ts`
-- Create: `src/tasks/research/packet.ts`
-- Create: `src/tasks/research/tool.ts`
-- Modify: `src/mcp/tools.ts`
-- Modify: `src/cli/research.ts`
-- Test: `tests/research-schema.test.ts`
-- Test: `tests/research-packet.test.ts`
-- Test: `tests/mcp-tools.test.ts`
-- Test: `tests/cli-research.test.ts`
+**Historical files:** this milestone previously introduced a separate task
+directory, CLI command, MCP registration, and task-specific tests. Those files
+were deleted when the public surface was collapsed to `review` and `delegate`.
 
 - [x] Define input fields: `question`, `cwd`, `context`, `includeGitStatus`, `includeFiles`, `providerProfile`, `model`, `effort`, `maxContextChars`.
 - [x] Define output fields: `status`, `answer`, `evidence`, `filesRead`, `commandsRun`, `missingContext`, `diagnostics`.
@@ -325,21 +333,18 @@ git add src tests docs README.md
 git commit -m "feat: add read-only research task"
 ```
 
-## Milestone 5: Add `verify` Task
+## Archived Milestone 5: Add `verify` Task
+
+Superseded after `v0.1.0`: the separate public command-verification task was
+removed. `delegate` is now the autonomous work path for investigation,
+implementation, and verification under one contract.
 
 **Outcome:** Codex can ask Claude Code to reproduce, inspect, or run verification commands, with a command-execution contract distinct from read-only review and writable delegation.
 
-**Files:**
-
-- Create: `src/tasks/verify/schema.ts`
-- Create: `src/tasks/verify/packet.ts`
-- Create: `src/tasks/verify/tool.ts`
-- Modify: `src/core/command-log.ts`
-- Modify: `src/mcp/tools.ts`
-- Modify: `src/cli/verify.ts`
-- Test: `tests/verify-schema.test.ts`
-- Test: `tests/verify-packet.test.ts`
-- Test: `tests/cli-verify.test.ts`
+**Historical files:** this milestone previously introduced a separate task
+directory, CLI command, MCP registration, and task-specific tests. Those files
+were deleted when command-backed work moved under the autonomous `delegate`
+contract.
 
 - [x] Define input fields: `hypothesis`, `commandsAllowed`, `cwd`, `context`, `providerProfile`, `model`, `effort`, `timeoutMs`.
 - [x] Define output fields: `status`, `summary`, `commandsRun`, `evidence`, `reproduction`, `diagnostics`, `needsFollowup`.
@@ -365,7 +370,7 @@ git commit -m "feat: add command verification task"
 
 ## Milestone 6: Design and Implement Writable `delegate`
 
-**Outcome:** Writable delegation exists only after review, research, and verify are stable. It has a separate task contract, destructive MCP annotations, workspace boundary checks, and structured handoff output.
+**Outcome:** Writable delegation has a separate task contract, destructive MCP annotations, workspace boundary checks, and structured handoff output.
 
 **Files:**
 
@@ -497,7 +502,7 @@ The repository reaches the original goal when all of these are true:
 - [x] `review` is stable and at least as usable as `codex-cc-reviewer` for Codex review loops.
 - [x] `deepseek` works as a provider profile without changing global shell configuration.
 - [x] Provider secrets are never intentionally returned in output, diagnostics, progress events, or formatted text.
-- [x] `research` and `verify` have separate contracts and are useful without write access.
+- [x] Superseded after `v0.1.0`: separate investigation and command-verification task contracts were removed from the active public surface.
 - [x] `delegate` has explicit destructive annotations, documented safety limits, workspace-boundary checks, and structured results.
 - [x] CLI and MCP surfaces expose the same task/provider concepts.
 - [x] Docs explain when to use this package versus generic Claude Code MCP wrappers.
@@ -532,7 +537,7 @@ Constraints:
 - Do not modify D:\Codes\codex-cc-reviewer unless the user explicitly authorizes it. Read-only migration reference is allowed.
 - Use TDD. For behavior changes, write or migrate tests before implementation.
 - For complex stages, use the Codex + cc_review convergence workflow: summarize/plan, review with cc_review, accept only substantiated findings, implement, then review the final diff.
-- Stabilize `review` before `research` and `verify`; stabilize those before writable `delegate`.
+- Keep the active public surface focused on `review` and `delegate`; do not recreate the removed separate investigation or command-verification tools.
 - After each completed phase, update AGENTS.md or a document indexed from it with completion quality, remaining risks, and next steps.
 - Communicate with the maintainer in Chinese.
 - Stop and report instead of continuing if the same test or command fails twice with the same root cause, if a step would require mutating D:\Codes\codex-cc-reviewer, if credentials are missing for a real provider smoke, or if a destructive command outside D:\Codes\codex-cc-tools appears necessary.

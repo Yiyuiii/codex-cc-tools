@@ -1,12 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 
-import {
-  registerCcDelegateTool,
-  registerCcResearchTool,
-  registerCcReviewTool,
-  registerCcVerifyTool
-} from "./tools.js";
+import { registerCcDelegateTool, registerCcReviewTool } from "./tools.js";
 import { VERSION } from "../version.js";
 
 export async function serveMcp(): Promise<void> {
@@ -16,8 +11,6 @@ export async function serveMcp(): Promise<void> {
   });
 
   registerCcReviewTool(server);
-  registerCcResearchTool(server);
-  registerCcVerifyTool(server);
   registerCcDelegateTool(server);
 
   const transport = new StdioServerTransport();

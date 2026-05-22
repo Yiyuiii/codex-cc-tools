@@ -3,35 +3,22 @@ import { Command } from "commander";
 import { pathToFileURL } from "node:url";
 
 import { runLocalDelegate } from "./cli/delegate.js";
-import { runLocalResearch } from "./cli/research.js";
 import { runLocalReview } from "./cli/review.js";
-import { runLocalVerify } from "./cli/verify.js";
 import { serveMcp } from "./mcp/server.js";
 import { getProviderProfiles } from "./providers/registry.js";
 import { getTaskDefinitions } from "./tasks/registry.js";
 import { VERSION } from "./version.js";
 
-export { runClaudeResearch } from "./tasks/research/tool.js";
-export type { CcResearchInput, CcResearchOutput } from "./tasks/research/schema.js";
 export { runClaudeDelegate } from "./tasks/delegate/tool.js";
 export type { CcDelegateInput, CcDelegateOutput } from "./tasks/delegate/schema.js";
 export { runClaudeReview } from "./tasks/review/tool.js";
 export type { CcReviewInput, CcReviewOutput } from "./tasks/review/schema.js";
-export { runClaudeVerify } from "./tasks/verify/tool.js";
-export type { CcVerifyInput, CcVerifyOutput } from "./tasks/verify/schema.js";
 export { serveMcp } from "./mcp/server.js";
-export {
-  registerCcDelegateTool,
-  registerCcResearchTool,
-  registerCcReviewTool,
-  registerCcVerifyTool
-} from "./mcp/tools.js";
+export { registerCcDelegateTool, registerCcReviewTool } from "./mcp/tools.js";
 
 export interface CreateProgramDeps {
   runLocalDelegate?: typeof runLocalDelegate;
   runLocalReview?: typeof runLocalReview;
-  runLocalResearch?: typeof runLocalResearch;
-  runLocalVerify?: typeof runLocalVerify;
   serveMcp?: typeof serveMcp;
 }
 
@@ -39,8 +26,6 @@ export function createProgram(deps: CreateProgramDeps = {}): Command {
   const program = new Command();
   const delegateRunner = deps.runLocalDelegate ?? runLocalDelegate;
   const reviewRunner = deps.runLocalReview ?? runLocalReview;
-  const researchRunner = deps.runLocalResearch ?? runLocalResearch;
-  const verifyRunner = deps.runLocalVerify ?? runLocalVerify;
   const mcpServer = deps.serveMcp ?? serveMcp;
 
   program
@@ -59,16 +44,9 @@ export function createProgram(deps: CreateProgramDeps = {}): Command {
 
   program
     .command("delegate")
-    .description("Run Claude Code for explicit writable delegated work.")
-    .requiredOption("--task <task>", "Writable delegation task.")
-    .requiredOption("--cwd <path>", "Explicit writable workspace root.")
-    .requiredOption("--isolation-kind <kind>", "Isolation kind: git-worktree, git-branch, or container.")
-    .option("--isolation-evidence <json>", "JSON object with isolation evidence fields.")
-    .requiredOption("--acceptance-criteria <items...>", "Acceptance criteria.")
-    .option("--context <context>", "Additional delegation context.")
-    .option("--allowed-paths <paths>", "Comma-separated writable path prefixes.")
-    .option("--forbidden-paths <paths>", "Comma-separated forbidden path prefixes.")
-    .option("--commands-allowed <commands...>", "Allowed Bash command(s); quote multi-word commands.")
+    .description("Run Claude Code on a Codex-provided prompt.")
+    .requiredOption("--prompt <prompt>", "Complete prompt to pass to Claude Code.")
+    .option("--cwd <path>", "Working directory for the Claude Code subprocess.")
     .option("--provider-profile <profile>", "Provider profile: anthropic or deepseek.")
     .option("--model <model>", "Claude Code model or provider alias.")
     .option("--effort <level>", "Claude Code effort level.")
@@ -115,45 +93,6 @@ export function createProgram(deps: CreateProgramDeps = {}): Command {
     .option("--provider-profile <profile>", "Provider profile: anthropic or deepseek.")
     .action(async (options) => {
       await reviewRunner(options);
-    });
-
-  program
-    .command("research")
-    .description("Run Claude Code for bounded read-only repository research.")
-    .requiredOption("--question <question>", "Research question.")
-    .option("--cwd <path>", "Working directory for Claude Code.")
-    .option("--context <context>", "Additional research context.")
-    .option("--include-git-status", "Include git status evidence.")
-    .option("--include-files <paths>", "Comma-separated files to include as evidence.")
-    .option("--provider-profile <profile>", "Provider profile: anthropic or deepseek.")
-    .option("--model <model>", "Claude Code model or provider alias.")
-    .option("--effort <level>", "Claude Code effort level.")
-    .option("--max-context-chars <number>", "Maximum packet context characters.")
-    .option("--no-stream", "Disable Claude Code stream-json output.")
-    .option("--cache-ttl <ttl>", "Prompt cache TTL.")
-    .action(async (options) => {
-      await researchRunner(options);
-    });
-
-  program
-    .command("verify")
-    .description("Run Claude Code for bounded command verification.")
-    .requiredOption("--hypothesis <hypothesis>", "Verification hypothesis.")
-    .requiredOption(
-      "--commands-allowed <commands...>",
-      "Allowed verification command(s); quote multi-word commands and do not embed credentials."
-    )
-    .option("--cwd <path>", "Working directory for Claude Code.")
-    .option("--context <context>", "Additional verification context.")
-    .option("--provider-profile <profile>", "Provider profile: anthropic or deepseek.")
-    .option("--model <model>", "Claude Code model or provider alias.")
-    .option("--effort <level>", "Claude Code effort level.")
-    .option("--timeout-ms <number>", "Claude Code subprocess timeout.")
-    .option("--max-context-chars <number>", "Maximum packet context characters.")
-    .option("--no-stream", "Disable Claude Code stream-json output.")
-    .option("--cache-ttl <ttl>", "Prompt cache TTL.")
-    .action(async (options) => {
-      await verifyRunner(options);
     });
 
   program

@@ -4,30 +4,14 @@ import { formatDelegateResult } from "../tasks/delegate/format.js";
 import { CcDelegateInputSchema, CcDelegateOutputSchema } from "../tasks/delegate/schema.js";
 import type { CcDelegateInput, CcDelegateOutput } from "../tasks/delegate/schema.js";
 import { runClaudeDelegate, type RunClaudeDelegateDeps } from "../tasks/delegate/tool.js";
-import { formatResearchResult } from "../tasks/research/format.js";
-import { CcResearchInputSchema, CcResearchOutputSchema } from "../tasks/research/schema.js";
-import type { CcResearchInput, CcResearchOutput } from "../tasks/research/schema.js";
-import { runClaudeResearch, type RunClaudeResearchDeps } from "../tasks/research/tool.js";
 import { formatReviewResult } from "../tasks/review/format.js";
 import { CcReviewInputSchema, CcReviewOutputSchema } from "../tasks/review/schema.js";
 import type { CcReviewInput, CcReviewOutput } from "../tasks/review/schema.js";
 import { runClaudeReview, type RunClaudeReviewDeps } from "../tasks/review/tool.js";
-import { formatVerifyResult } from "../tasks/verify/format.js";
-import { CcVerifyInputSchema, CcVerifyOutputSchema } from "../tasks/verify/schema.js";
-import type { CcVerifyInput, CcVerifyOutput } from "../tasks/verify/schema.js";
-import { runClaudeVerify, type RunClaudeVerifyDeps } from "../tasks/verify/tool.js";
 import { createProgressReporter } from "./progress.js";
 
 export interface RegisterCcReviewToolDeps {
   runReview?: (input: CcReviewInput, deps?: RunClaudeReviewDeps) => Promise<CcReviewOutput>;
-}
-
-export interface RegisterCcResearchToolDeps {
-  runResearch?: (input: CcResearchInput, deps?: RunClaudeResearchDeps) => Promise<CcResearchOutput>;
-}
-
-export interface RegisterCcVerifyToolDeps {
-  runVerify?: (input: CcVerifyInput, deps?: RunClaudeVerifyDeps) => Promise<CcVerifyOutput>;
 }
 
 export interface RegisterCcDelegateToolDeps {
@@ -55,7 +39,39 @@ export function registerCcDelegateTool(
       }
     },
     async (input, extra) => {
-      const parsed = CcDelegateInputSchema.parse(input);
+      const parsed = CcDelegateInputSchema.safeParse(input);
+      if (!parsed.success) {
+        const output = CcDelegateOutputSchema.parse({
+          ok: false,
+          status: "failed",
+          model: "unknown",
+          elapsedMs: 0,
+          summary: "Invalid cc_delegate input.",
+          filesChanged: [],
+          commandsRun: [],
+          verification: [],
+          risks: [],
+          diagnostics: [
+            "Input validation failed.",
+            ...parsed.error.issues.map((issue) => {
+              const path = issue.path.join(".") || "<root>";
+              return `${path}: ${issue.message}`;
+            })
+          ],
+          command: ["claude"]
+        });
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: formatDelegateResult(output)
+            }
+          ],
+          structuredContent: output
+        };
+      }
+
       const progress = createProgressReporter(extra);
       let progressFinished = false;
       const finishProgress = async () => {
@@ -66,7 +82,7 @@ export function registerCcDelegateTool(
       };
 
       try {
-        const result = await runDelegate(parsed, {
+        const result = await runDelegate(parsed.data, {
           onActivity: progress.onActivity,
           signal: extra.signal
         });
@@ -135,118 +151,6 @@ export function registerCcReviewTool(
             {
               type: "text",
               text: formatReviewResult(output)
-            }
-          ],
-          structuredContent: output
-        };
-      } finally {
-        await finishProgress();
-      }
-    }
-  );
-}
-
-export function registerCcResearchTool(
-  server: McpServer,
-  deps: RegisterCcResearchToolDeps = {}
-): void {
-  const runResearch = deps.runResearch ?? runClaudeResearch;
-
-  server.registerTool(
-    "cc_research",
-    {
-      title: "Claude Code Research",
-      description: "Run Claude Code for bounded read-only repository research.",
-      inputSchema: CcResearchInputSchema.shape,
-      outputSchema: CcResearchOutputSchema.shape,
-      annotations: {
-        readOnlyHint: true,
-        destructiveHint: false,
-        idempotentHint: true,
-        openWorldHint: false
-      }
-    },
-    async (input, extra) => {
-      const parsed = CcResearchInputSchema.parse(input);
-      const progress = createProgressReporter(extra);
-      let progressFinished = false;
-      const finishProgress = async () => {
-        if (!progressFinished) {
-          progressFinished = true;
-          await progress.finish();
-        }
-      };
-
-      try {
-        const result = await runResearch(parsed, {
-          onActivity: progress.onActivity,
-          signal: extra.signal
-        });
-        await finishProgress();
-        const diagnostics = [...(result.diagnostics ?? []), ...progress.getDiagnostics()];
-        const output = diagnostics.length ? { ...result, diagnostics } : result;
-
-        return {
-          content: [
-            {
-              type: "text",
-              text: formatResearchResult(output)
-            }
-          ],
-          structuredContent: output
-        };
-      } finally {
-        await finishProgress();
-      }
-    }
-  );
-}
-
-export function registerCcVerifyTool(
-  server: McpServer,
-  deps: RegisterCcVerifyToolDeps = {}
-): void {
-  const runVerify = deps.runVerify ?? runClaudeVerify;
-
-  server.registerTool(
-    "cc_verify",
-    {
-      title: "Claude Code Verify",
-      description: "Run Claude Code for bounded command verification.",
-      inputSchema: CcVerifyInputSchema.shape,
-      outputSchema: CcVerifyOutputSchema.shape,
-      annotations: {
-        readOnlyHint: false,
-        destructiveHint: false,
-        idempotentHint: false,
-        openWorldHint: false
-      }
-    },
-    async (input, extra) => {
-      const parsed = CcVerifyInputSchema.parse(input);
-      const progress = createProgressReporter(extra);
-      let progressFinished = false;
-      const finishProgress = async () => {
-        if (!progressFinished) {
-          progressFinished = true;
-          await progress.finish();
-        }
-      };
-
-      try {
-        const result = await runVerify(parsed, {
-          onActivity: progress.onActivity,
-          signal: extra.signal
-        });
-        await finishProgress();
-        const diagnostics = [...result.diagnostics, ...progress.getDiagnostics()];
-        const output = diagnostics.length ? { ...result, diagnostics } : result;
-
-        return {
-          content: [
-            {
-              type: "text",
-              text: formatVerifyResult(output)
             }
           ],
           structuredContent: output

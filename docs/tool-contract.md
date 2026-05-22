@@ -1,34 +1,29 @@
 # Tool Contract
 
-`codex-cc-tools` exposes the same task concepts through CLI commands and MCP tools.
+`codex-cc-tools` exposes two high-leverage task concepts through CLI commands
+and MCP tools.
 
 | Task | CLI | MCP | Authority |
 | --- | --- | --- | --- |
 | Review | `review` | `cc_review` | Read-only |
-| Research | `research` | `cc_research` | Read-only |
-| Verify | `verify` | `cc_verify` | Explicit command execution |
-| Delegate | `delegate` | `cc_delegate` | Explicit workspace write |
+| Delegate | `delegate` | `cc_delegate` | Destructive Claude Code execution |
 
 ## Review
 
 Use `review` for external critique of plans, diffs, and documents. It asks Claude Code not to edit files and returns review text plus optional structured output. Git diff, status, and untracked content are opt-in evidence sources.
 
-## Research
-
-Use `research` for bounded repository investigation. Output includes an answer, evidence, files read, missing context, and diagnostics. It is not a write path.
-
-## Verify
-
-Use `verify` for reproductions and command-backed checks. The caller must provide `commandsAllowed`; the command list is passed to Claude Code as explicit Bash tool authority and is also documented in the packet.
-
 ## Delegate
 
-Use `delegate` only for writable subtasks. It requires:
+Use `delegate` to pass one complete prompt from Codex to Claude Code and return
+structured results. It requires:
 
-- explicit `cwd`
-- structured isolation evidence
-- at least one acceptance criterion
+- `prompt`
 
-It blocks unsafe roots, protected branches, failed isolation checks, unsafe command authority, path-policy escapes, malformed structured output, and post-run changed paths outside policy.
+Optional `cwd` is only the subprocess working directory. It is not a safety
+boundary. Extra context, command sequences, and acceptance checks belong inside
+the prompt rather than separate MCP fields.
 
-`delegate` is marked destructive in MCP metadata. Caller-managed OS, container, or worktree isolation remains required for hard isolation.
+`delegate` is marked destructive in MCP metadata because Claude Code may edit
+files or run commands. The tool invokes Claude Code in non-interactive
+`bypassPermissions` mode for autonomous execution. Caller-managed OS,
+container, worktree, repository, and command policy remain outside this tool.

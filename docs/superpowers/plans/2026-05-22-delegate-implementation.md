@@ -1,5 +1,11 @@
 # Delegate Implementation Plan
 
+Superseded after `v0.1.0`: this plan describes the earlier safety-heavy
+delegate design with isolation, path policy, and command policy. The active
+maintainer requirement is a thin Claude Code bridge: Codex supplies one complete
+prompt, execution-space policy stays outside the MCP tool, and `cc_delegate`
+returns structured results.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Implement the reviewed writable `delegate` task behind explicit isolation, workspace-boundary, command, process, CLI, and MCP safety controls.

@@ -109,7 +109,7 @@ export interface RunClaudeTaskInput {
   effort: ClaudeEffort;
   cacheTtl: CacheTtl;
   permissionMode: ClaudePermissionMode;
-  tools: string[];
+  tools?: string[];
   stream: boolean;
   verbose?: boolean;
   includePartialMessages?: boolean;
@@ -243,7 +243,7 @@ export interface BuildClaudeArgsInput {
   model: string;
   effort: ClaudeEffort;
   permissionMode: ClaudePermissionMode;
-  tools: string[];
+  tools?: string[];
   stream: boolean;
   verbose?: boolean;
   includePartialMessages?: boolean;
@@ -289,12 +289,11 @@ export function buildClaudeArgs(input: BuildClaudeArgsInput): string[] {
     args.push("--dangerously-skip-permissions");
   }
 
-  args.push(
-    "--allowedTools",
-    ...input.tools,
-    "--output-format",
-    input.stream ? "stream-json" : "json"
-  );
+  if (input.tools?.length) {
+    args.push("--allowedTools", ...input.tools);
+  }
+
+  args.push("--output-format", input.stream ? "stream-json" : "json");
 
   if (input.stream && (input.verbose ?? true)) {
     args.push("--verbose");

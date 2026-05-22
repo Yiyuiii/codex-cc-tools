@@ -6,94 +6,47 @@ import {
 } from "../src/tasks/delegate/schema.js";
 
 describe("CcDelegateInputSchema", () => {
-  it("parses a minimal git-worktree delegate request", () => {
+  it("parses a minimal prompt-only delegate request", () => {
     const parsed = CcDelegateInputSchema.parse({
-      task: "Implement the focused change.",
-      cwd: "D:\\Codes\\repo-worktree",
-      isolation: {
-        kind: "git-worktree",
-        branch: "codex/feature"
-      },
-      acceptanceCriteria: ["Tests pass."]
+      prompt: "Implement the focused change."
     });
 
     expect(parsed.providerProfile).toBe("anthropic");
     expect(parsed.model).toBe("opus");
     expect(parsed.effort).toBe("max");
-    expect(parsed.commandsAllowed).toBeUndefined();
-    expect(parsed.acceptanceCriteria).toEqual(["Tests pass."]);
+    expect(parsed.cwd).toBeUndefined();
   });
 
-  it("rejects missing cwd and empty acceptance criteria", () => {
-    expect(() =>
-      CcDelegateInputSchema.parse({
-        task: "Implement the change.",
-        isolation: { kind: "git-worktree", branch: "codex/feature" },
-        acceptanceCriteria: ["Tests pass."]
-      })
-    ).toThrow();
-
-    expect(() =>
-      CcDelegateInputSchema.parse({
-        task: "Implement the change.",
-        cwd: "D:\\Codes\\repo-worktree",
-        isolation: { kind: "git-worktree", branch: "codex/feature" },
-        acceptanceCriteria: []
-      })
-    ).toThrow();
-  });
-
-  it("requires explicit acknowledgements for weaker isolation modes", () => {
-    expect(() =>
-      CcDelegateInputSchema.parse({
-        task: "Implement the change.",
-        cwd: "D:\\Codes\\repo-worktree",
-        isolation: { kind: "git-branch", branch: "codex/feature" },
-        acceptanceCriteria: ["Tests pass."]
-      })
-    ).toThrow();
-
-    expect(() =>
-      CcDelegateInputSchema.parse({
-        task: "Implement the change.",
-        cwd: "/workspace/repo",
-        isolation: {
-          kind: "container",
-          containerId: "abc123",
-          workspaceMount: "/workspace/repo",
-          writableRoot: "/workspace/repo"
-        },
-        acceptanceCriteria: ["Tests pass."]
-      })
-    ).toThrow();
-  });
-
-  it("normalizes optional string lists and treats empty command lists as no Bash", () => {
+  it("accepts cwd only as an optional process working directory", () => {
     const parsed = CcDelegateInputSchema.parse({
-      task: "Implement the change.",
-      cwd: "D:\\Codes\\repo-worktree",
-      isolation: { kind: "git-worktree", branch: "codex/feature" },
-      acceptanceCriteria: ["Tests pass."],
-      allowedPaths: "src, tests",
-      forbiddenPaths: ["src/secrets"],
-      commandsAllowed: []
+      prompt: "Run the requested commands.",
+      cwd: "D:\\Codes\\repo"
     });
 
-    expect(parsed.allowedPaths).toEqual(["src", "tests"]);
-    expect(parsed.forbiddenPaths).toEqual(["src/secrets"]);
-    expect(parsed.commandsAllowed).toBeUndefined();
+    expect(parsed.cwd).toBe("D:\\Codes\\repo");
   });
 
-  it("rejects comma-separated command allowlists", () => {
+  it("rejects removed execution-space fields", () => {
     expect(() =>
       CcDelegateInputSchema.parse({
-        task: "Implement the change.",
-        cwd: "D:\\Codes\\repo-worktree",
-        isolation: { kind: "git-worktree", branch: "codex/feature" },
-        acceptanceCriteria: ["Tests pass."],
+        prompt: "Implement the change.",
+        isolation: { kind: "git-worktree", branch: "codex/feature" }
+      })
+    ).toThrow();
+
+    expect(() =>
+      CcDelegateInputSchema.parse({
+        prompt: "Implement the change.",
+        acceptanceCriteria: ["Tests pass."]
+      })
+    ).toThrow();
+
+    expect(() =>
+      CcDelegateInputSchema.parse({
+        prompt: "Implement the change.",
         commandsAllowed: "npm test,npm run build"
       })
-    ).toThrow(/separate command arguments/i);
+    ).toThrow();
   });
 });
 
