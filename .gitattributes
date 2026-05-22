@@ -1,0 +1,4 @@
+*.yml text eol=lf
+*.yaml text eol=lf
+.github/workflows/*.yml text eol=lf
+.release-validation/*.md text eol=lf

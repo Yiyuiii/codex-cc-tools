@@ -1,0 +1,39 @@
+[
+  {
+    "id": "docs-secret-handling",
+    "category": "small-docs-only",
+    "knownBlockingFindings": [
+      {
+        "id": "docs-commits-secret-file",
+        "description": "The documentation tells users to save a real API key in .env and commit it, which would leak credentials."
+      }
+    ],
+    "context": "Review this docs-only diff for release-blocking security or correctness issues.\n\n```diff\ndiff --git a/docs/setup.md b/docs/setup.md\nnew file mode 100644\nindex 0000000..1111111\n--- /dev/null\n+++ b/docs/setup.md\n@@ -0,0 +1,23 @@\n+# Local setup\n+\n+1. Create a project token in the provider console.\n+2. Save it in `.env`:\n+\n+```bash\n+PROVIDER_API_KEY=sk_live_replace_with_your_real_key\n+```\n+\n+3. Commit the file so teammates inherit the same settings:\n+\n+```bash\n+git add .env\n+git commit -m \"chore: share provider env\"\n+```\n+\n+4. Run the service:\n+\n+```bash\n+npm run dev\n+```\n+\n+The committed key lets CI and local development use the same credential.\n+```\n+\n+Known intended blocking issue for evaluation: the docs instruct users to commit a real secret-bearing `.env` file."
+  },
+  {
+    "id": "ts-path-traversal",
+    "category": "medium-typescript-behavior",
+    "knownBlockingFindings": [
+      {
+        "id": "workspace-path-traversal",
+        "description": "The resolver accepts user-supplied paths after string replacement without realpath/boundary validation, allowing traversal outside the workspace."
+      }
+    ],
+    "context": "Review this TypeScript behavior diff for release-blocking correctness or security issues.\n\n```diff\ndiff --git a/src/workspace.ts b/src/workspace.ts\nindex 2222222..3333333 100644\n--- a/src/workspace.ts\n+++ b/src/workspace.ts\n@@ -1,19 +1,17 @@\n import { readFile } from \"node:fs/promises\";\n-import { resolve, relative } from \"node:path\";\n+import { join } from \"node:path\";\n \n export async function readWorkspaceFile(root: string, userPath: string): Promise<string> {\n-  const absoluteRoot = resolve(root);\n-  const absolutePath = resolve(absoluteRoot, userPath);\n-  const relativePath = relative(absoluteRoot, absolutePath);\n-\n-  if (relativePath.startsWith(\"..\") || relativePath === \"\" || relativePath.includes(\"..\")) {\n-    throw new Error(\"Path escapes workspace\");\n-  }\n-\n-  return readFile(absolutePath, \"utf8\");\n+  const cleaned = userPath.replace(/\\.\\./g, \"\");\n+  return readFile(join(root, cleaned), \"utf8\");\n }\n \n export async function readConfig(root: string, name: string): Promise<string> {\n-  return readWorkspaceFile(root, `configs/${name}.json`);\n+  return readWorkspaceFile(root, `configs/${name}`);\n }\n```\n\nKnown intended blocking issue for evaluation: path traversal and workspace escape are possible because user input is sanitized by string replacement and joined without resolved boundary checks."
+  },
+  {
+    "id": "mixed-auth-bypass",
+    "category": "larger-mixed",
+    "knownBlockingFindings": [
+      {
+        "id": "debug-admin-auth-bypass",
+        "description": "The middleware grants admin access whenever x-debug-admin is present, before verifying the session or environment."
+      },
+      {
+        "id": "test-normalizes-bypass",
+        "description": "The new test asserts the insecure debug-admin path instead of rejecting it, making the auth bypass look intentional."
+      }
+    ],
+    "context": "Review this mixed source/test/docs diff for release-blocking security, correctness, and test issues.\n\n```diff\ndiff --git a/src/auth/session.ts b/src/auth/session.ts\nindex 4444444..5555555 100644\n--- a/src/auth/session.ts\n+++ b/src/auth/session.ts\n@@ -1,28 +1,36 @@\n export interface RequestLike {\n   headers: Record<string, string | undefined>;\n }\n \n export interface UserSession {\n   userId: string;\n   role: \"user\" | \"admin\";\n }\n \n export async function loadSession(req: RequestLike): Promise<UserSession | undefined> {\n+  if (req.headers[\"x-debug-admin\"]) {\n+    return { userId: \"debug\", role: \"admin\" };\n+  }\n+\n   const token = req.headers.authorization?.replace(/^Bearer\\s+/i, \"\");\n   if (!token) return undefined;\n \n   const session = await verifySignedSession(token);\n   if (!session) return undefined;\n \n   return session;\n }\n \n export async function requireAdmin(req: RequestLike): Promise<UserSession> {\n   const session = await loadSession(req);\n   if (!session || session.role !== \"admin\") {\n     throw new Error(\"Forbidden\");\n   }\n   return session;\n }\n \n async function verifySignedSession(token: string): Promise<UserSession | undefined> {\n   if (token === \"signed-admin\") return { userId: \"1\", role: \"admin\" };\n   if (token === \"signed-user\") return { userId: \"2\", role: \"user\" };\n   return undefined;\n }\ndiff --git a/tests/auth-session.test.ts b/tests/auth-session.test.ts\nindex 6666666..7777777 100644\n--- a/tests/auth-session.test.ts\n+++ b/tests/auth-session.test.ts\n@@ -1,11 +1,18 @@\n import { describe, expect, it } from \"vitest\";\n import { requireAdmin } from \"../src/auth/session.js\";\n \n describe(\"requireAdmin\", () => {\n   it(\"accepts signed admin sessions\", async () => {\n     await expect(requireAdmin({ headers: { authorization: \"Bearer signed-admin\" } })).resolves.toMatchObject({ role: \"admin\" });\n   });\n+\n+  it(\"allows debug admins for local development\", async () => {\n+    await expect(requireAdmin({ headers: { \"x-debug-admin\": \"1\" } })).resolves.toMatchObject({\n+      userId: \"debug\",\n+      role: \"admin\"\n+    });\n+  });\n });\ndiff --git a/docs/auth.md b/docs/auth.md\nindex 8888888..9999999 100644\n--- a/docs/auth.md\n+++ b/docs/auth.md\n@@ -1,4 +1,8 @@\n # Auth\n \n Admin endpoints require a signed admin session.\n+\n+For local smoke testing, clients may send `x-debug-admin: 1` to exercise admin-only flows without creating a signed session.\n+This is safe because the header is obscure and not documented in the public API reference.\n```\n\nKnown intended blocking issues for evaluation: source introduces an unauthenticated admin bypass, tests assert the bypass as expected behavior, and docs normalize the insecure header."
+  }
+]

@@ -1,0 +1,8 @@
+node_modules/
+dist/
+coverage/
+.omc/
+*.tgz
+.env
+.env.*
+!.env.example

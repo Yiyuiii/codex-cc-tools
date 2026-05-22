@@ -1,0 +1,12 @@
+  --dangerously-skip-permissions                    Bypass all permission checks.
+  --effort <level>                                  Effort level for the current session (low, medium, high, xhigh, max)
+  --include-hook-events                             Include all hook lifecycle events in the output stream (only works with --output-format=stream-json)
+  --include-partial-messages                        Include partial message chunks as they arrive (only works with --print and --output-format=stream-json)
+  --json-schema <schema>                            JSON Schema for structured output validation.
+  --model <model>                                   Model for the current session.
+  --no-session-persistence                          Disable session persistence - sessions will not be saved to disk and cannot be resumed (only works with --print)
+  --output-format <format>                          Output format (only works with --print): "text" (default), "json" (single result), or "stream-json" (realtime streaming)
+  --permission-mode <mode>                          Permission mode to use for the session (choices: "acceptEdits", "auto", "bypassPermissions", "default", "dontAsk", "plan")
+  -p, --print                                       Print response and exit (useful for pipes).
+  --allowedTools, --allowed-tools <tools...>        Comma or space-separated list of tool names to allow (e.g. "Bash(git *) Edit")
+  --verbose                                         Override verbose mode setting from config

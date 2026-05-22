@@ -1,0 +1,23 @@
+{
+  "runId": "2026-05-21T21-59-41-398Z",
+  "repetitions": 5,
+  "sampleCount": 1,
+  "totalRuns": 1,
+  "byProvider": {
+    "deepseek": {
+      "totalRuns": 1,
+      "okRuns": 1,
+      "structuredValidRuns": 1,
+      "runsWithMissedKnownFindings": 0,
+      "totalMissedKnownFindings": 0,
+      "p95LatencyMs": 69779,
+      "totalCostUsd": 0.150219
+    }
+  },
+  "thresholds": {
+    "minStructuredValidDeepSeekRuns": 14,
+    "maxDeepSeekMissedKnownFindings": 0,
+    "maxDeepSeekP95LatencyVsAnthropicRatio": 2.5
+  },
+  "verdict": "incomplete"
+}

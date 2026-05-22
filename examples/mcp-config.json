@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "codex-cc-tools": {
+      "command": "codex-cc-tools-mcp",
+      "args": []
+    }
+  }
+}

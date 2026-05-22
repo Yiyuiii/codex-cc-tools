@@ -1,0 +1,90 @@
+import type { CcReviewOutput } from "./schema.js";
+
+export function formatReviewResult(result: CcReviewOutput): string {
+  const sections = result.review.trim() ? [result.review.trim()] : [];
+  const activity = formatActivity(result);
+
+  if (activity) {
+    sections.push(activity);
+  }
+
+  return `${sections.join("\n\n")}\n`;
+}
+
+function formatActivity(result: CcReviewOutput): string | undefined {
+  if (
+    !result.eventsTail?.length &&
+    !result.transcriptTail?.length &&
+    !result.activityTail?.length &&
+    !result.cache &&
+    result.costUsd === undefined &&
+    !result.diagnostics?.length
+  ) {
+    return undefined;
+  }
+
+  const lines = ["## Claude Code Activity"];
+
+  if (result.eventCount !== undefined) {
+    lines.push(`events captured: ${result.eventCount}`);
+  }
+
+  if (result.eventsTail?.length) {
+    lines.push("recent events:");
+    for (const event of result.eventsTail.slice(-20)) {
+      lines.push(`- ${event}`);
+    }
+  }
+
+  if (result.transcriptTail?.length) {
+    lines.push("## Claude Code Transcript");
+    for (const text of result.transcriptTail.slice(-10)) {
+      lines.push(`- ${text}`);
+    }
+  }
+
+  if (result.activityTail?.length) {
+    lines.push("## Claude Code Timeline");
+    for (const event of result.activityTail.slice(-20)) {
+      lines.push(`- #${event.index} ${event.kind} ${event.rawType}: ${event.summary}`);
+    }
+  }
+
+  if (result.cache) {
+    const cacheParts = [];
+    if (result.cache.effective !== undefined) {
+      cacheParts.push(`cache effective: ${result.cache.effective}`);
+    }
+    if (result.cache.inputTokens !== undefined) {
+      cacheParts.push(`input tokens (uncached): ${result.cache.inputTokens}`);
+    }
+    if (result.cache.creationInputTokens !== undefined) {
+      cacheParts.push(`cache creation tokens: ${result.cache.creationInputTokens}`);
+    }
+    if (result.cache.cacheCreation?.ephemeral1hInputTokens !== undefined) {
+      cacheParts.push(`cache creation 1h tokens: ${result.cache.cacheCreation.ephemeral1hInputTokens}`);
+    }
+    if (result.cache.cacheCreation?.ephemeral5mInputTokens !== undefined) {
+      cacheParts.push(`cache creation 5m tokens: ${result.cache.cacheCreation.ephemeral5mInputTokens}`);
+    }
+    if (result.cache.readInputTokens !== undefined) {
+      cacheParts.push(`cache read tokens: ${result.cache.readInputTokens}`);
+    }
+    if (cacheParts.length) {
+      lines.push(cacheParts.join(", "));
+    }
+  }
+
+  if (result.costUsd !== undefined) {
+    lines.push(`cost: $${result.costUsd}`);
+  }
+
+  if (result.diagnostics?.length) {
+    lines.push("## Diagnostics");
+    for (const diagnostic of result.diagnostics) {
+      lines.push(`- ${diagnostic}`);
+    }
+  }
+
+  return lines.join("\n");
+}

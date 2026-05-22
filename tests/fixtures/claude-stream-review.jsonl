@@ -1,0 +1,6 @@
+{"type":"system","subtype":"init","session_id":"abc"}
+{"type":"stream_event","event":{"type":"content_block_delta","delta":{"type":"text_delta","text":"Inspecting deepseek-token "}}}
+{"type":"stream_event","event":{"type":"content_block_delta","delta":{"type":"text_delta","text":"now."}}}
+{"type":"assistant","message":{"content":[{"type":"text","text":"Intermediate deepseek-token finding."},{"type":"tool_use","name":"Read","input":{"file_path":"README.md","token":"deepseek-token"}}]}}
+{"type":"user","message":{"content":[{"type":"tool_result","content":"Tool result mentions deepseek-token"}]}}
+{"type":"result","result":"Final deepseek-token review.","total_cost_usd":0.12,"usage":{"input_tokens":12,"cache_creation_input_tokens":100,"cache_read_input_tokens":200,"cache_creation":{"ephemeral_1h_input_tokens":80,"ephemeral_5m_input_tokens":20}}}

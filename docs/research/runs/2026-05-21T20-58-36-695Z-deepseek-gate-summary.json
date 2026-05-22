@@ -1,0 +1,168 @@
+{
+  "runId": "2026-05-21T20-58-36-695Z",
+  "primaryJsonl": "docs/research/runs/2026-05-21T20-58-36-695Z-deepseek-gate.jsonl",
+  "supplementalJsonl": "docs/research/runs/2026-05-21T21-59-41-398Z-deepseek-gate.jsonl",
+  "generatedAt": "2026-05-21T22:02:16.406Z",
+  "totalRuns": 30,
+  "samples": [
+    "docs-secret-handling",
+    "ts-path-traversal",
+    "mixed-auth-bypass"
+  ],
+  "byProvider": {
+    "anthropic": {
+      "totalRuns": 15,
+      "okRuns": 15,
+      "structuredValidRuns": 15,
+      "runsWithMissedKnownFindings": 0,
+      "totalMissedKnownFindings": 0,
+      "p95LatencyMs": 282458,
+      "totalCostUsd": 4.900403,
+      "bySample": {
+        "docs-secret-handling": {
+          "runs": 5,
+          "okRuns": 5,
+          "structuredValidRuns": 5,
+          "totalMissedKnownFindings": 0,
+          "findingCounts": [
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "verdicts": [
+            "blocked",
+            "blocked",
+            "blocked",
+            "blocked",
+            "blocked"
+          ]
+        },
+        "ts-path-traversal": {
+          "runs": 5,
+          "okRuns": 5,
+          "structuredValidRuns": 5,
+          "totalMissedKnownFindings": 0,
+          "findingCounts": [
+            3,
+            3,
+            3,
+            3,
+            3
+          ],
+          "verdicts": [
+            "blocked",
+            "blocked",
+            "blocked",
+            "blocked",
+            "blocked"
+          ]
+        },
+        "mixed-auth-bypass": {
+          "runs": 5,
+          "okRuns": 5,
+          "structuredValidRuns": 5,
+          "totalMissedKnownFindings": 0,
+          "findingCounts": [
+            3,
+            3,
+            3,
+            4,
+            4
+          ],
+          "verdicts": [
+            "blocked",
+            "blocked",
+            "blocked",
+            "blocked",
+            "blocked"
+          ]
+        }
+      }
+    },
+    "deepseek": {
+      "totalRuns": 15,
+      "okRuns": 15,
+      "structuredValidRuns": 15,
+      "runsWithMissedKnownFindings": 0,
+      "totalMissedKnownFindings": 0,
+      "p95LatencyMs": 396400,
+      "totalCostUsd": 3.002626,
+      "bySample": {
+        "docs-secret-handling": {
+          "runs": 5,
+          "okRuns": 5,
+          "structuredValidRuns": 5,
+          "totalMissedKnownFindings": 0,
+          "findingCounts": [
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "verdicts": [
+            "blocked",
+            "blocked",
+            "blocked",
+            "blocked",
+            "blocked"
+          ]
+        },
+        "ts-path-traversal": {
+          "runs": 5,
+          "okRuns": 5,
+          "structuredValidRuns": 5,
+          "totalMissedKnownFindings": 0,
+          "findingCounts": [
+            2,
+            4,
+            2,
+            3,
+            2
+          ],
+          "verdicts": [
+            "blocked",
+            "blocked",
+            "blocked",
+            "blocked",
+            "blocked"
+          ]
+        },
+        "mixed-auth-bypass": {
+          "runs": 5,
+          "okRuns": 5,
+          "structuredValidRuns": 5,
+          "totalMissedKnownFindings": 0,
+          "findingCounts": [
+            3,
+            3,
+            3,
+            3,
+            3
+          ],
+          "verdicts": [
+            "blocked",
+            "blocked",
+            "blocked",
+            "blocked",
+            "blocked"
+          ]
+        }
+      }
+    }
+  },
+  "latencyRatioDeepSeekVsAnthropicP95": 1.403,
+  "thresholds": {
+    "minStructuredValidDeepSeekRuns": 14,
+    "maxDeepSeekMissedKnownFindings": 0,
+    "maxDeepSeekP95LatencyVsAnthropicRatio": 2.5
+  },
+  "thresholdResults": {
+    "structuredValidDeepSeekRuns": 15,
+    "deepSeekMissedKnownFindings": 0,
+    "deepSeekP95LatencyVsAnthropicRatio": 1.403
+  },
+  "verdict": "candidate_pass_pending_cc_review"
+}
