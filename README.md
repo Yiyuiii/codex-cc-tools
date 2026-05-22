@@ -133,7 +133,7 @@ Recommended Codex prompt:
 ```text
 For complex changes, use codex-cc-tools at useful checkpoints.
 Use cc_review before implementation and before finalizing a diff.
-Use cc_delegate for independent delegated subtasks; make the prompt explicit about read-only or writable scope, and call it in parallel when scopes are independent.
+Use cc_delegate for independent delegated subtasks; each call receives one complete prompt plus process options and returns structured results. Parallelism comes from launching multiple independent calls.
 Treat Claude Code output as advisory evidence; Codex must accept, reject, or defer findings explicitly.
 ```
 
@@ -182,8 +182,9 @@ execution space. If you want a worktree, container, temporary directory, branch
 policy, or command policy, prepare that outside this MCP tool and pass the final
 instruction through `prompt`.
 
-Multiple `cc_delegate` calls can be launched in parallel when the caller ensures
-they are read-only or their writable scopes do not overlap.
+Multiple `cc_delegate` calls can be launched in parallel. Each call starts a
+separate Claude Code subprocess, receives its own prompt and process options,
+and returns its own structured result.
 
 ## CLI Examples
 

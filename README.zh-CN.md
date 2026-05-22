@@ -128,7 +128,7 @@ DeepSeek profile 接受的模型参数：
 ```text
 复杂变更中，在关键检查点使用 codex-cc-tools。
 实现前和最终 diff 前使用 cc_review。
-把独立子任务交给 cc_delegate；在 prompt 里明确这是只读调查还是可写实现，范围独立时可以并行调用。
+把独立子任务交给 cc_delegate；每次调用接收一段完整 prompt 和进程选项，并返回结构化结果。并行来自同时发起多个独立调用。
 Claude Code 的输出是建议性证据，Codex 必须明确说明采纳、拒绝或搁置哪些发现。
 ```
 
@@ -170,7 +170,7 @@ Claude Code 的输出是建议性证据，Codex 必须明确说明采纳、拒�
 
 `cc_delegate` 默认使用 `providerProfile: "deepseek"`。它在 MCP metadata 中标记为 destructive，因为会使用 Claude Code 的非交互 `bypassPermissions` 模式自主执行。只要 prompt 明确禁止改文件，它也可用于只读调查；但工具元数据必须反映它具备写入能力。它不创建、不检查、也不强制执行空间。如果需要 worktree、容器、临时目录、分支策略或命令策略，请在调用 MCP 前由外层准备好，再把最终要求写进 `prompt`。
 
-多个 `cc_delegate` 调用可以并行发起，前提是调用方确保它们都是只读任务，或写入范围互不重叠。
+多个 `cc_delegate` 调用可以并行发起。每次调用都会启动独立的 Claude Code 子进程，接收自己的 prompt 和进程选项，并返回自己的结构化结果。
 
 ## CLI 示例
 

@@ -30,5 +30,6 @@ files or run commands. The tool invokes Claude Code in non-interactive
 container, worktree, repository, and command policy remain outside this tool.
 `delegate` defaults to `providerProfile: "deepseek"`; callers can set
 `providerProfile: "anthropic"` when they want native Claude Code routing.
-Callers may launch multiple `delegate` tasks in parallel when they ensure the
-prompts define independent read-only or disjoint writable scopes.
+Callers may launch multiple `delegate` tasks in parallel. Each task starts a
+separate Claude Code subprocess from one complete prompt plus optional process
+settings, then returns its own structured result.

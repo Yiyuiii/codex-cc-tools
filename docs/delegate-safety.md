@@ -5,8 +5,9 @@ complete prompt, the tool starts Claude Code, Claude Code works continuously, an
 the tool returns structured results to Codex. It is suitable for autonomous
 delegated subtasks, including read-only investigation and writable
 implementation, when the prompt states the intended scope.
-Multiple `cc_delegate` calls may run in parallel when the caller ensures their
-tasks are read-only or their writable scopes are disjoint.
+Multiple `cc_delegate` calls may run in parallel. Each call starts a separate
+Claude Code subprocess, receives its own prompt and process options, and returns
+its own structured result.
 
 This tool is not an execution-space manager, sandbox, worktree creator, branch
 policy engine, path policy engine, or command policy engine. Those concerns
