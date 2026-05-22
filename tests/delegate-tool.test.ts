@@ -24,6 +24,7 @@ describe("runClaudeDelegate", () => {
     const result = await runClaudeDelegate(
       { ...baseInput, cwd: "C:\\" },
       {
+        policy: { platform: "win32" },
         execute: async () => {
           executed = true;
           throw new Error("should not execute");
