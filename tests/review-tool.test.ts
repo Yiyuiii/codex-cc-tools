@@ -11,7 +11,6 @@ const baseInput: CcReviewInput = {
   effort: "max",
   output: "markdown",
   permissionMode: "bypassPermissions",
-  tools: ["default"],
   includeGitDiff: false,
   includeGitStatus: false,
   redactSecrets: false,
@@ -53,7 +52,7 @@ describe("runClaudeReview", () => {
     expect(result).toMatchObject({
       ok: true,
       task: "review_plan",
-      model: "opus",
+      model: "claude-opus-4-8",
       elapsedMs: 250,
       review: "No findings.",
       costUsd: 0.04
@@ -127,7 +126,7 @@ describe("runClaudeReview", () => {
     expect(observedArgs).not.toContain("--include-hook-events");
   });
 
-  it("omits default allowed tools for Ark review unless tools are explicit", async () => {
+  it("omits default allowed tools for every provider unless tools are explicit", async () => {
     const observedArgs: string[][] = [];
     const execute: ClaudeExecutor = async (_command, args) => {
       observedArgs.push(args);
@@ -138,20 +137,26 @@ describe("runClaudeReview", () => {
       };
     };
 
-    await runClaudeReview(
-      CcReviewInputSchema.parse({
-        task: "review_doc",
-        context: "Review this document.",
-        providerProfile: "ark_coding_plan",
-        stream: false
-      }),
-      {
-        execute,
-        buildPacket: async () => "PACKET",
-        sourceEnv: { ARK_API_KEY: "ark-token" },
-        now: fakeClock([1, 2])
-      }
-    );
+    for (const [index, providerProfile, sourceEnv] of [
+      [0, "anthropic", {}],
+      [1, "deepseek", { DEEPSEEK_API_KEY: "deepseek-token" }],
+      [2, "ark_coding_plan", { ARK_API_KEY: "ark-token" }]
+    ] as const) {
+      await runClaudeReview(
+        CcReviewInputSchema.parse({
+          task: "review_doc",
+          context: "Review this document.",
+          providerProfile,
+          stream: false
+        }),
+        {
+          execute,
+          buildPacket: async () => "PACKET",
+          sourceEnv,
+          now: fakeClock([index * 2 + 1, index * 2 + 2])
+        }
+      );
+    }
 
     await runClaudeReview(
       CcReviewInputSchema.parse({
@@ -170,7 +175,9 @@ describe("runClaudeReview", () => {
     );
 
     expect(observedArgs[0]).not.toContain("--allowedTools");
-    expect(observedArgs[1]?.slice(observedArgs[1].indexOf("--allowedTools"), observedArgs[1].indexOf("--output-format"))).toEqual([
+    expect(observedArgs[1]).not.toContain("--allowedTools");
+    expect(observedArgs[2]).not.toContain("--allowedTools");
+    expect(observedArgs[3]?.slice(observedArgs[3].indexOf("--allowedTools"), observedArgs[3].indexOf("--output-format"))).toEqual([
       "--allowedTools",
       "default"
     ]);

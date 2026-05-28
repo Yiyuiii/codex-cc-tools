@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.3.0-beta.2] - 2026-05-29
+
+- Stop injecting default `tools: ["default"]` for all `cc_review` provider
+  profiles. When `tools` is omitted or empty, Claude Code receives no
+  `--allowedTools` flag.
+- Preserve explicit `tools` requests as the caller-specified Claude Code
+  allowlist.
+- Keep review packet routing guidance generic when no review tools are set,
+  avoiding empty `available Claude Code tools ()` guidance.
+- Resolve native Anthropic `model: "opus"` to `claude-opus-4-8`; other
+  Anthropic model names continue to pass through directly.
+- Record local smoke evidence that Claude Code `--model opus --effort max`
+  still resolved to `claude-opus-4-7`, while explicit
+  `--model claude-opus-4-8 --effort max` succeeded.
+
 ## [0.3.0-beta.1] - 2026-05-29
 
 - For `cc_review` with `providerProfile: "ark_coding_plan"`, omit default

@@ -13,7 +13,7 @@ describe("CcReviewInputSchema", () => {
     expect(parsed.effort).toBe("max");
     expect(parsed.output).toBe("markdown");
     expect(parsed.permissionMode).toBe("bypassPermissions");
-    expect(parsed.tools).toEqual(["default"]);
+    expect(parsed.tools).toBeUndefined();
     expect(parsed.includeGitDiff).toBe(false);
     expect(parsed.includeGitStatus).toBe(false);
     expect(parsed.autoDiscoverGit).toBeUndefined();
@@ -53,14 +53,16 @@ describe("CcReviewInputSchema", () => {
     ).toThrow(/unrecognized/i);
   });
 
-  it("keeps Ark review tools unset unless the request provides tools", () => {
-    expect(
-      CcReviewInputSchema.parse({
-        task: "review_doc",
-        context: "Review this document.",
-        providerProfile: "ark_coding_plan"
-      }).tools
-    ).toBeUndefined();
+  it("keeps review tools unset for every provider unless the request provides tools", () => {
+    for (const providerProfile of ["anthropic", "deepseek", "ark_coding_plan"] as const) {
+      expect(
+        CcReviewInputSchema.parse({
+          task: "review_doc",
+          context: "Review this document.",
+          providerProfile
+        }).tools
+      ).toBeUndefined();
+    }
 
     expect(
       CcReviewInputSchema.parse({
@@ -93,7 +95,7 @@ describe("CcReviewInputSchema", () => {
         context: "Review this document.",
         tools: ""
       }).tools
-    ).toEqual(["default"]);
+    ).toBeUndefined();
   });
 });
 

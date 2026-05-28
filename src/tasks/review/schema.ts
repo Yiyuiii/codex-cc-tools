@@ -110,10 +110,7 @@ export const CcReviewInputObjectSchema = z
   })
   .strict();
 
-export const CcReviewInputSchema = CcReviewInputObjectSchema.transform((input) => ({
-  ...input,
-  tools: input.tools ?? (input.providerProfile === "ark_coding_plan" ? undefined : ["default"])
-}));
+export const CcReviewInputSchema = CcReviewInputObjectSchema;
 
 export const CcReviewOutputSchema = z.object({
   ok: z.boolean(),

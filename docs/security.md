@@ -4,9 +4,23 @@
 
 Provider profile environment is constructed per Claude Code child process. The tool should not rewrite global shell configuration or persist provider credentials.
 
+## Claude Code Tool Allowlist Scope
+
+`cc_review` does not pass Claude Code `--allowedTools` by default for any
+provider profile. Omitting the flag leaves the effective Claude Code tool surface
+to the caller's Claude Code environment and model route. If callers provide
+`tools`, those entries are forwarded as an explicit `--allowedTools` allowlist.
+
+`cc_delegate` has no separate tools field and also omits `--allowedTools`; its
+execution scope should be controlled by the caller's prompt and external
+workspace, OS, container, or worktree boundary.
+
 ## Anthropic Profile
 
 The `anthropic` provider profile intentionally trusts the caller's Claude Code environment. Existing route variables such as `ANTHROPIC_BASE_URL`, `ANTHROPIC_AUTH_TOKEN`, `ANTHROPIC_API_KEY`, Bedrock, Vertex, or proxy settings are inherited unless a later task adds an explicit policy.
+
+The `opus` model input is resolved by this package to `claude-opus-4-8` before
+invoking Claude Code. Other Anthropic model names are passed through directly.
 
 Inherited provider credentials are still added to the provider redaction list when visible in the immediate environment.
 

@@ -1,5 +1,17 @@
 # 更新日志
 
+## [0.3.0-beta.2] - 2026-05-29
+
+- 所有 `cc_review` provider profile 都不再注入默认 `tools: ["default"]`；
+  当 `tools` 省略或为空时，Claude Code 子进程不会收到 `--allowedTools`。
+- 显式传入 `tools` 时仍按调用方指定的 Claude Code allowlist 转发。
+- 未设置 review tools 时，review packet 使用通用仓库工具提示，避免出现
+  `available Claude Code tools ()` 空工具提示。
+- 原生 Anthropic profile 中的 `model: "opus"` 现在解析为
+  `claude-opus-4-8`；其它 Anthropic 模型名继续直接透传。
+- 记录本地 smoke 证据：Claude Code `--model opus --effort max` 仍解析到
+  `claude-opus-4-7`，而显式 `--model claude-opus-4-8 --effort max` 成功。
+
 ## [0.3.0-beta.1] - 2026-05-29
 
 - `cc_review` 使用 `providerProfile: "ark_coding_plan"` 时，若调用方没有显式提供

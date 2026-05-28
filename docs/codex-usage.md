@@ -115,7 +115,7 @@ subprocess with its own environment, model, and working directory.
 
 | Profile | Use for |
 | --- | --- |
-| `anthropic` | High-stakes reviews where you want native Claude Code quality. Default for `cc_review`. |
+| `anthropic` | High-stakes reviews where you want native Claude Code quality. Default for `cc_review`; `opus` resolves to `claude-opus-4-8`. |
 | `deepseek` | Routine delegated work where DeepSeek V4 Pro quality is adequate and cost matters. Default for `cc_delegate`. |
 | `ark_coding_plan` | Explicit fallback or comparison runs through Volcengine Ark Coding Plan. Common aliases route to `doubao-seed-2.0-pro`. |
 

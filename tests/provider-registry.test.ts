@@ -37,12 +37,16 @@ describe("provider registry", () => {
     expect(resolveProviderProfile("deepseek", "haiku").model).toBe("deepseek-v4-flash");
   });
 
-  it("keeps Anthropic model aliases unchanged", () => {
+  it("maps the Anthropic opus alias to Claude Opus 4.8", () => {
     expect(resolveProviderProfile("anthropic", "opus")).toEqual({
       provider: "anthropic",
-      model: "opus",
+      model: "claude-opus-4-8",
       experimental: false
     });
+    expect(resolveProviderProfile("anthropic", "claude-opus-4-8").model).toBe(
+      "claude-opus-4-8"
+    );
+    expect(resolveProviderProfile("anthropic", "sonnet").model).toBe("sonnet");
   });
 
   it("maps common Claude Code aliases for the Ark Coding Plan provider", () => {

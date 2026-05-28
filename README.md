@@ -102,6 +102,10 @@ For the native `anthropic` provider profile, this package delegates to the nativ
 
 Users do not need to provide `ANTHROPIC_AUTH_TOKEN` or `ANTHROPIC_API_KEY` as environment variables for the `anthropic` profile. If Anthropic, Bedrock, Vertex, or proxy route variables are already present in the environment, they are inherited by the Claude Code subprocess; they are optional inputs, not required setup.
 
+For `providerProfile: "anthropic"`, this package resolves the default
+`model: "opus"` input to `claude-opus-4-8` before invoking Claude Code. Other
+Anthropic model names are passed through directly.
+
 For DeepSeek, the MCP server process must start with one of these environment variables:
 
 ```bash
@@ -210,7 +214,7 @@ Treat Claude Code output as advisory evidence; Codex must accept, reject, or def
 All tools accept:
 
 - `providerProfile`: `cc_review` defaults to `anthropic`; `cc_delegate` defaults to `deepseek`; explicit values can be `anthropic`, `deepseek`, or `ark_coding_plan`
-- `model`: `opus` by default; provider aliases are resolved per profile
+- `model`: `opus` by default; provider aliases are resolved per profile. In the native Anthropic profile, `opus` resolves to `claude-opus-4-8`.
 - `effort`: `max` by default; one of `low`, `medium`, `high`, `max`
 - `cwd`: task working directory where applicable
 - `maxContextChars`: defaults to `120000`
@@ -230,7 +234,7 @@ All tools accept:
 }
 ```
 
-Review tasks are `review_plan`, `review_diff`, `review_doc`, and `adversarial_review`. Optional fields include `originalGoal`, `codexSummary`, `acceptanceCriteria`, `knownRisks`, `testsRun`, `permissionMode`, `tools`, `includeUntrackedContent`, and `redactSecrets`.
+Review tasks are `review_plan`, `review_diff`, `review_doc`, and `adversarial_review`. Optional fields include `originalGoal`, `codexSummary`, `acceptanceCriteria`, `knownRisks`, `testsRun`, `permissionMode`, `tools`, `includeUntrackedContent`, and `redactSecrets`. When `tools` is omitted or empty, `cc_review` does not pass Claude Code `--allowedTools`; if `tools` is provided, the entries are forwarded as the explicit Claude Code tool allowlist.
 
 `cc_delegate` key fields:
 
@@ -301,11 +305,12 @@ This package is designed for trusted local owner workflows. It does not make Cla
 | Setting | Default | Notes |
 | --- | --- | --- |
 | `providerProfile` | `cc_review`: `anthropic`; `cc_delegate`: `deepseek` | `anthropic` uses native Claude Code profile/auth. `deepseek` requires `DEEPSEEK_API_KEY` or `OPENAI_API_KEY_DEEPSEEK`; `ark_coding_plan` requires `ARK_API_KEY` or `VOLCENGINE_API_KEY`. |
-| `model` | `opus` | In DeepSeek profile, `opus` and `sonnet` map to `deepseek-v4-pro[1m]`; `haiku` maps to `deepseek-v4-flash`. In Ark Coding Plan, common aliases map to `doubao-seed-2.0-pro`; direct model names pass through. |
+| `model` | `opus` | In Anthropic profile, `opus` maps to `claude-opus-4-8`. In DeepSeek profile, `opus` and `sonnet` map to `deepseek-v4-pro[1m]`; `haiku` maps to `deepseek-v4-flash`. In Ark Coding Plan, common aliases map to `doubao-seed-2.0-pro`; direct model names pass through. |
 | `effort` | `max` | Higher effort is slower and may cost more. On metered providers, use `medium` or `low` for routine checks. |
 | `cacheTtl` | `1h` | Adds Claude Code prompt-cache hint where supported; reported cache fields are provider/Claude Code estimates. |
 | `redactSecrets` | `true` for review packet evidence | Best-effort only; avoid sending secrets in prompts, files, and command output. |
-| `permissionMode` for review | `bypassPermissions` | Disables Claude Code's interactive permission prompts. Use the default only in repositories you own; use narrower tools/modes for shared or sensitive repos. |
+| `permissionMode` for review | `bypassPermissions` | Disables Claude Code's interactive permission prompts. Use the default only in repositories you own; use explicit `tools` or narrower modes for shared or sensitive repos. |
+| `cc_review` tools | unset | No `--allowedTools` flag is passed by default for any provider profile. Explicit `tools` values are forwarded to Claude Code. |
 | `cc_delegate` tools | Claude Code non-interactive execution | Takes a complete prompt and runs Claude Code with `bypassPermissions`. Execution-space policy is external. |
 
 For the full provider boundary, see [docs/security.md](docs/security.md). For all schemas, see [docs/tool-contract.md](docs/tool-contract.md).

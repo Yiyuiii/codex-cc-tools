@@ -22,6 +22,7 @@ describe("provider environment", () => {
     });
 
     expect(result.ok).toBe(true);
+    expect(result.model).toBe("claude-opus-4-8");
     expect(result.env).toMatchObject({
       ANTHROPIC_BASE_URL: "https://gateway.example.test/anthropic",
       ANTHROPIC_AUTH_TOKEN: "anthropic-token",

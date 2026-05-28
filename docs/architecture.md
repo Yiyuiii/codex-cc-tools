@@ -57,6 +57,8 @@ src/
 The current repository implements the provider and task registries, CLI/MCP entry points for review, and the first shared runner foundation:
 
 - `src/providers/env.ts` builds per-invocation provider environments.
+- `src/providers/anthropic.ts` owns native Anthropic model aliases such as
+  `opus` to `claude-opus-4-8`.
 - `src/providers/deepseek.ts` owns DeepSeek model aliases and endpoint defaults.
 - `src/providers/ark-coding-plan.ts` owns Ark Coding Plan model aliases and
   endpoint defaults.

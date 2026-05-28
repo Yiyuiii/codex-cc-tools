@@ -10,7 +10,13 @@ and MCP tools.
 
 ## Review
 
-Use `review` for external critique of plans, diffs, and documents. It asks Claude Code not to edit files and returns review text plus optional structured output. Git diff, status, and untracked content are opt-in evidence sources.
+Use `review` for external critique of plans, diffs, and documents. It asks
+Claude Code not to edit files and returns review text plus optional structured
+output. Git diff, status, and untracked content are opt-in evidence sources.
+
+By default, `review` does not pass Claude Code `--allowedTools` for any
+provider profile. When callers provide the optional `tools` field, those values
+are forwarded as the explicit Claude Code tool allowlist.
 
 ## Delegate
 

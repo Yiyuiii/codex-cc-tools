@@ -10,7 +10,7 @@
 - Claude Code authenticated locally if you use the native `anthropic` provider profile
 - Codex or another MCP client that can start a stdio MCP server
 
-The native `anthropic` profile delegates to the native Claude Code CLI. Run Claude Code once interactively if local auth is not ready. It does not require `ANTHROPIC_AUTH_TOKEN` or `ANTHROPIC_API_KEY` to be set in the process environment, although existing Anthropic, Bedrock, Vertex, and proxy route variables are inherited when present.
+The native `anthropic` profile delegates to the native Claude Code CLI. Run Claude Code once interactively if local auth is not ready. It does not require `ANTHROPIC_AUTH_TOKEN` or `ANTHROPIC_API_KEY` to be set in the process environment, although existing Anthropic, Bedrock, Vertex, and proxy route variables are inherited when present. The package resolves `model: "opus"` to `claude-opus-4-8` before invoking Claude Code.
 
 The `deepseek` provider profile requires one of these variables in the environment that starts Codex or the MCP server:
 
@@ -169,7 +169,7 @@ node dist/mcp-server.js
 
 ## Provider Profiles
 
-`anthropic` uses the caller's existing Claude Code profile and authentication state. Existing Anthropic, Bedrock, Vertex, and proxy route variables are inherited by design.
+`anthropic` uses the caller's existing Claude Code profile and authentication state. Existing Anthropic, Bedrock, Vertex, and proxy route variables are inherited by design. The `opus` model input resolves to `claude-opus-4-8`; other Anthropic model names pass through.
 
 `deepseek` is configured per Claude Code child process from `DEEPSEEK_API_KEY` or `OPENAI_API_KEY_DEEPSEEK`. The package does not rewrite the user's shell profile. It injects DeepSeek's Anthropic-compatible endpoint and model variables into the child process, and removes inherited Anthropic, Bedrock, Vertex, and provider-token route variables from that child process first.
 

@@ -90,7 +90,7 @@ export async function buildReviewPacket(
       formatDiffEvidence(
         prepareBlock(rawGitDiff || "No git diff evidence.", sectionBudget(budget, 0.3), input.redactSecrets),
         sectionBudget(budget, 0.3),
-        input.tools ?? []
+        input.tools
       )
     );
   }
@@ -100,7 +100,7 @@ export async function buildReviewPacket(
       routeUntrackedForReview(redactUntrackedEvidence(rawUntrackedFiles, input.redactSecrets), {
         totalBudgetChars: sectionBudget(budget, 0.18),
         contentRedacted: input.redactSecrets,
-        availableTools: input.tools ?? []
+        availableTools: input.tools
       }).markdown
     );
   }
@@ -150,7 +150,7 @@ function sectionBudget(total: number, weight: number): number {
   return Math.max(100, Math.floor(total * weight));
 }
 
-function formatDiffEvidence(rawGitDiff: string, totalBudgetChars: number, tools: string[]): string {
+function formatDiffEvidence(rawGitDiff: string, totalBudgetChars: number, tools: string[] | undefined): string {
   const parsedFiles = parseUnifiedDiff(rawGitDiff);
   if (parsedFiles.length) {
     return routeDiffForReview(parsedFiles, {

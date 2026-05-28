@@ -94,6 +94,38 @@ describe("buildReviewPacket", () => {
     expect(packet).not.toContain("## Untracked Files Manifest");
   });
 
+  it("uses generic repository tool guidance when review tools are unset", async () => {
+    const packet = await buildReviewPacket(
+      CcReviewInputSchema.parse({
+        task: "review_diff",
+        context: "Review this diff.",
+        includeUntrackedContent: true
+      }),
+      {
+        getGitSummary: async () => "Diff Stat\n src/index.ts | 2 +-",
+        getGitStatus: async () => "1 .M N... src/index.ts",
+        getGitDiff: async () => "diff --git a/src/index.ts b/src/index.ts",
+        getUntrackedFileEvidence: async () => [
+          {
+            path: "notes.txt",
+            sizeBytes: 20,
+            inclusion: "candidate",
+            reason: "untracked_text",
+            content: "follow-up note"
+          }
+        ]
+      }
+    );
+
+    expect(packet).toContain(
+      "Use Read, Grep, Bash, or other available Claude Code tools to inspect partial or omitted files when they matter."
+    );
+    expect(packet).toContain(
+      "Use Read, Grep, Bash, or other available Claude Code tools to inspect them when they matter."
+    );
+    expect(packet).not.toContain("available Claude Code tools ()");
+  });
+
   it("includes untracked file content only when explicitly requested", async () => {
     const defaultPacket = await buildReviewPacket(
       CcReviewInputSchema.parse({
