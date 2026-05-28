@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { runClaudeReview, REVIEW_STDIN_PROMPT } from "../src/tasks/review/tool.js";
 import type { ClaudeExecutor } from "../src/core/claude-runner.js";
-import type { CcReviewInput } from "../src/tasks/review/schema.js";
+import { CcReviewInputSchema, type CcReviewInput } from "../src/tasks/review/schema.js";
 
 const baseInput: CcReviewInput = {
   task: "review_plan",
@@ -125,6 +125,55 @@ describe("runClaudeReview", () => {
     expect(observedArgs).not.toContain("--verbose");
     expect(observedArgs).not.toContain("--include-partial-messages");
     expect(observedArgs).not.toContain("--include-hook-events");
+  });
+
+  it("omits default allowed tools for Ark review unless tools are explicit", async () => {
+    const observedArgs: string[][] = [];
+    const execute: ClaudeExecutor = async (_command, args) => {
+      observedArgs.push(args);
+      return {
+        stdout: JSON.stringify({ result: "No findings." }),
+        stderr: "",
+        exitCode: 0
+      };
+    };
+
+    await runClaudeReview(
+      CcReviewInputSchema.parse({
+        task: "review_doc",
+        context: "Review this document.",
+        providerProfile: "ark_coding_plan",
+        stream: false
+      }),
+      {
+        execute,
+        buildPacket: async () => "PACKET",
+        sourceEnv: { ARK_API_KEY: "ark-token" },
+        now: fakeClock([1, 2])
+      }
+    );
+
+    await runClaudeReview(
+      CcReviewInputSchema.parse({
+        task: "review_doc",
+        context: "Review this document.",
+        providerProfile: "ark_coding_plan",
+        tools: "default",
+        stream: false
+      }),
+      {
+        execute,
+        buildPacket: async () => "PACKET",
+        sourceEnv: { ARK_API_KEY: "ark-token" },
+        now: fakeClock([3, 4])
+      }
+    );
+
+    expect(observedArgs[0]).not.toContain("--allowedTools");
+    expect(observedArgs[1]?.slice(observedArgs[1].indexOf("--allowedTools"), observedArgs[1].indexOf("--output-format"))).toEqual([
+      "--allowedTools",
+      "default"
+    ]);
   });
 
   it("returns cancellation before building the packet when already aborted", async () => {

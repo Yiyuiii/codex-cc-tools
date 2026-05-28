@@ -5,7 +5,11 @@ import { CcDelegateInputSchema, CcDelegateOutputSchema } from "../tasks/delegate
 import type { CcDelegateInput, CcDelegateOutput } from "../tasks/delegate/schema.js";
 import { runClaudeDelegate, type RunClaudeDelegateDeps } from "../tasks/delegate/tool.js";
 import { formatReviewResult } from "../tasks/review/format.js";
-import { CcReviewInputSchema, CcReviewOutputSchema } from "../tasks/review/schema.js";
+import {
+  CcReviewInputObjectSchema,
+  CcReviewInputSchema,
+  CcReviewOutputSchema
+} from "../tasks/review/schema.js";
 import type { CcReviewInput, CcReviewOutput } from "../tasks/review/schema.js";
 import { runClaudeReview, type RunClaudeReviewDeps } from "../tasks/review/tool.js";
 import { createProgressReporter } from "./progress.js";
@@ -118,7 +122,7 @@ export function registerCcReviewTool(
     {
       title: "Claude Code Review",
       description: "Run Claude Code as an external reviewer for Codex plans, diffs, or documents.",
-      inputSchema: CcReviewInputSchema.shape,
+      inputSchema: CcReviewInputObjectSchema.shape,
       outputSchema: CcReviewOutputSchema.shape,
       annotations: {
         readOnlyHint: true,

@@ -53,6 +53,25 @@ describe("CcReviewInputSchema", () => {
     ).toThrow(/unrecognized/i);
   });
 
+  it("keeps Ark review tools unset unless the request provides tools", () => {
+    expect(
+      CcReviewInputSchema.parse({
+        task: "review_doc",
+        context: "Review this document.",
+        providerProfile: "ark_coding_plan"
+      }).tools
+    ).toBeUndefined();
+
+    expect(
+      CcReviewInputSchema.parse({
+        task: "review_doc",
+        context: "Review this document.",
+        providerProfile: "ark_coding_plan",
+        tools: "default"
+      }).tools
+    ).toEqual(["default"]);
+  });
+
   it("normalizes tools and structured list fields", () => {
     const parsed = CcReviewInputSchema.parse({
       task: "review_diff",

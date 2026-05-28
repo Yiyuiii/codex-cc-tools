@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.3.0-beta.1] - 2026-05-29
+
+- For `cc_review` with `providerProfile: "ark_coding_plan"`, omit default
+  Claude Code `--allowedTools default` unless the caller explicitly provides
+  `tools`.
+- Keep non-Ark `cc_review` behavior unchanged: Anthropic and DeepSeek still
+  default to `tools: ["default"]`.
+- Preserve explicit Ark tools requests, including `tools: "default"`, so callers
+  can still opt into Claude Code tools when they want that path.
+- Add regression coverage for Ark default tool omission and explicit tool
+  preservation.
+
 ## [0.3.0-beta.0] - 2026-05-28
 
 - Add explicit `ark_coding_plan` provider profile for Volcengine Ark Coding Plan.

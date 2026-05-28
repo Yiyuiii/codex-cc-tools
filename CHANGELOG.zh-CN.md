@@ -1,5 +1,15 @@
 # 更新日志
 
+## [0.3.0-beta.1] - 2026-05-29
+
+- `cc_review` 使用 `providerProfile: "ark_coding_plan"` 时，若调用方没有显式提供
+  `tools`，不再默认传入 Claude Code 的 `--allowedTools default`。
+- 非 Ark 的 `cc_review` 行为保持不变：Anthropic 和 DeepSeek 仍默认使用
+  `tools: ["default"]`。
+- Ark 显式传入工具时仍会保留，例如 `tools: "default"`，调用方仍可主动进入
+  Claude Code tools 路径。
+- 增加回归测试，覆盖 Ark 默认省略 tools 和显式 tools 保留两种行为。
+
 ## [0.3.0-beta.0] - 2026-05-28
 
 - 新增显式 `ark_coding_plan` provider profile，用于火山方舟 Ark Coding Plan。

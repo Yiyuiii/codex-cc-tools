@@ -46,8 +46,12 @@ const ActivityEventSchema = z.object({
 });
 
 const ToolsSchema = z.preprocess((value) => {
+  if (value === undefined) {
+    return undefined;
+  }
+
   if (Array.isArray(value) && value.length === 0) {
-    return ["default"];
+    return undefined;
   }
 
   if (typeof value !== "string") return value;
@@ -57,8 +61,8 @@ const ToolsSchema = z.preprocess((value) => {
     .map((item) => item.trim())
     .filter(Boolean);
 
-  return tools.length ? tools : ["default"];
-}, z.array(z.string().min(1)).default(["default"]));
+  return tools.length ? tools : undefined;
+}, z.array(z.string().min(1)).optional());
 
 const NonEmptyStringSchema = z.string().trim().min(1);
 
@@ -74,7 +78,7 @@ const StringListSchema = z
   .transform((value) => (value?.length ? value : undefined))
   .optional();
 
-export const CcReviewInputSchema = z
+export const CcReviewInputObjectSchema = z
   .object({
     task: ReviewTaskSchema,
     prompt: NonEmptyStringSchema.optional(),
@@ -105,6 +109,11 @@ export const CcReviewInputSchema = z
     providerProfile: ProviderProfileSchema.default("anthropic")
   })
   .strict();
+
+export const CcReviewInputSchema = CcReviewInputObjectSchema.transform((input) => ({
+  ...input,
+  tools: input.tools ?? (input.providerProfile === "ark_coding_plan" ? undefined : ["default"])
+}));
 
 export const CcReviewOutputSchema = z.object({
   ok: z.boolean(),
