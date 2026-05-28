@@ -26,6 +26,15 @@ describe("CcDelegateInputSchema", () => {
     expect(parsed.cwd).toBe("D:\\Codes\\repo");
   });
 
+  it("accepts Ark Coding Plan as an explicit provider profile", () => {
+    const parsed = CcDelegateInputSchema.parse({
+      prompt: "Run the requested commands.",
+      providerProfile: "ark_coding_plan"
+    });
+
+    expect(parsed.providerProfile).toBe("ark_coding_plan");
+  });
+
   it("rejects removed execution-space fields", () => {
     expect(() =>
       CcDelegateInputSchema.parse({

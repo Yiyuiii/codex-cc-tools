@@ -1,6 +1,6 @@
 {
   "name": "codex-cc-tools",
-  "version": "0.2.1-beta.1",
+  "version": "0.3.0-beta.0",
   "description": "Claude Code task tools for Codex, including review and delegated subtasks.",
   "type": "module",
   "repository": {
@@ -20,8 +20,25 @@
     "AGENTS.md",
     "README.md",
     "README.zh-CN.md",
-    "docs",
-    "examples"
+    "CHANGELOG.md",
+    "CHANGELOG.zh-CN.md",
+    "SECURITY.md",
+    "CONTRIBUTING.md",
+    "LICENSE",
+    "docs/installation.md",
+    "docs/codex-usage.md",
+    "docs/tool-contract.md",
+    "docs/security.md",
+    "docs/delegate-safety.md",
+    "docs/troubleshooting.md",
+    "docs/architecture.md",
+    "docs/prior-art.md",
+    "docs/migration-from-reviewer.md",
+    "examples/AGENTS.md",
+    "examples/codex-global-prompt.md",
+    "examples/codex-synthesis.md",
+    "examples/codex-config.md",
+    "examples/mcp-config.json"
   ],
   "scripts": {
     "dev": "tsx src/index.ts",
@@ -31,6 +48,7 @@
     "verify": "npm run typecheck && npm test && npm run build && node dist/index.js --version && node dist/index.js --help",
     "verify:release": "npm run typecheck && npm test && npm run release:smoke",
     "preflight": "npm ci && npm run verify:release",
+    "prepublishOnly": "npm run verify:release",
     "release:smoke": "npm run build && node scripts/release-smoke.mjs"
   },
   "dependencies": {

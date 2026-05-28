@@ -1,9 +1,13 @@
 import { z } from "zod";
 
+import {
+  ARK_CODING_PLAN_PRO_MODEL,
+  resolveArkCodingPlanModel
+} from "./ark-coding-plan.js";
 import { resolveAnthropicModel } from "./anthropic.js";
 import { DEEPSEEK_FLASH_MODEL, resolveDeepSeekModel } from "./deepseek.js";
 
-export const ProviderProfileSchema = z.enum(["anthropic", "deepseek"]);
+export const ProviderProfileSchema = z.enum(["anthropic", "deepseek", "ark_coding_plan"]);
 export type ProviderProfileName = z.infer<typeof ProviderProfileSchema>;
 
 export interface ProviderProfileDefinition {
@@ -31,6 +35,11 @@ const PROVIDERS: ProviderProfileDefinition[] = [
     name: "deepseek",
     role: "DeepSeek Anthropic-compatible Claude Code provider",
     experimental: false
+  },
+  {
+    name: "ark_coding_plan",
+    role: "Volcengine Ark Coding Plan Claude Code provider",
+    experimental: true
   }
 ];
 
@@ -50,10 +59,19 @@ export function resolveProviderProfile(
     };
   }
 
+  if (provider === "deepseek") {
+    return {
+      provider,
+      model: resolveDeepSeekModel(requestedModel) ?? requestedModel,
+      subagentModel: DEEPSEEK_FLASH_MODEL,
+      experimental: false
+    };
+  }
+
   return {
     provider,
-    model: resolveDeepSeekModel(requestedModel) ?? requestedModel,
-    subagentModel: DEEPSEEK_FLASH_MODEL,
-    experimental: false
+    model: resolveArkCodingPlanModel(requestedModel),
+    subagentModel: ARK_CODING_PLAN_PRO_MODEL,
+    experimental: true
   };
 }

@@ -15,6 +15,9 @@ A provider profile decides which backend Claude Code uses.
 - `anthropic`: the inherited/native Claude Code backend.
 - `deepseek`: DeepSeek's Anthropic-compatible endpoint. It has passed the
   current repeated-run gate for the implemented `review` task.
+- `ark_coding_plan`: Volcengine Ark Coding Plan's Anthropic-compatible Claude
+  Code endpoint. It is available as an explicit profile and remains
+  experimental until real smoke and quality evidence are recorded.
 
 Provider profiles own model mapping, environment construction, provider-token redaction, and provider-specific diagnostics.
 
@@ -27,7 +30,7 @@ A task decides what Claude Code is asked to do.
   provider profile.
 
 Tasks should not hard-code provider details. A review or delegate task can run
-on `anthropic` or `deepseek`.
+on `anthropic`, `deepseek`, or `ark_coding_plan`.
 
 ### MCP Authority Metadata
 
@@ -55,6 +58,8 @@ The current repository implements the provider and task registries, CLI/MCP entr
 
 - `src/providers/env.ts` builds per-invocation provider environments.
 - `src/providers/deepseek.ts` owns DeepSeek model aliases and endpoint defaults.
+- `src/providers/ark-coding-plan.ts` owns Ark Coding Plan model aliases and
+  endpoint defaults.
 - `src/core/redaction.ts` redacts provider tokens from nested output.
 - `src/core/claude-runner.ts` owns the initial Claude Code subprocess contract and happy-path stream parsing. The stream parser is redaction-unaware; the runner is the single output redaction boundary, with progress callbacks redacted before delivery.
 - `src/tasks/review/*` owns the read-only review schema, packet construction, output formatting, and runner adapter.
@@ -88,4 +93,6 @@ Review packet safety defaults are conservative:
 
 ## Design Rule
 
-Do not make `deepseek` a task. It is a provider profile. The generic subtask capability should be represented as `task: "delegate"` with `providerProfile: "deepseek"` when DeepSeek is the selected backend.
+Do not make provider backends such as `deepseek` or `ark_coding_plan` tasks.
+They are provider profiles. The generic subtask capability should be
+represented as `task: "delegate"` with the selected `providerProfile`.

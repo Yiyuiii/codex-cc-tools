@@ -3,7 +3,10 @@ import { Command } from "commander";
 import { pathToFileURL } from "node:url";
 
 import { runLocalDelegate } from "./cli/delegate.js";
+import { runDoctor } from "./cli/doctor.js";
+import { runInstallCodexConfig } from "./cli/install.js";
 import { runLocalReview } from "./cli/review.js";
+import { runUninstallCodexConfig } from "./cli/uninstall.js";
 import { serveMcp } from "./mcp/server.js";
 import { getProviderProfiles } from "./providers/registry.js";
 import { getTaskDefinitions } from "./tasks/registry.js";
@@ -17,16 +20,22 @@ export { serveMcp } from "./mcp/server.js";
 export { registerCcDelegateTool, registerCcReviewTool } from "./mcp/tools.js";
 
 export interface CreateProgramDeps {
+  runDoctor?: typeof runDoctor;
+  installCodexConfig?: typeof runInstallCodexConfig;
   runLocalDelegate?: typeof runLocalDelegate;
   runLocalReview?: typeof runLocalReview;
   serveMcp?: typeof serveMcp;
+  uninstallCodexConfig?: typeof runUninstallCodexConfig;
 }
 
 export function createProgram(deps: CreateProgramDeps = {}): Command {
   const program = new Command();
   const delegateRunner = deps.runLocalDelegate ?? runLocalDelegate;
+  const doctorRunner = deps.runDoctor ?? runDoctor;
+  const installRunner = deps.installCodexConfig ?? runInstallCodexConfig;
   const reviewRunner = deps.runLocalReview ?? runLocalReview;
   const mcpServer = deps.serveMcp ?? serveMcp;
+  const uninstallRunner = deps.uninstallCodexConfig ?? runUninstallCodexConfig;
 
   program
     .name("codex-cc-tools")
@@ -34,12 +43,41 @@ export function createProgram(deps: CreateProgramDeps = {}): Command {
     .version(VERSION);
 
   program
+    .command("install")
+    .description("Install codex-cc-tools MCP config into Codex.")
+    .option("--package-spec <spec>", "npm package spec for npx mode.")
+    .option("--config-path <path>", "Codex config path; defaults to ~/.codex/config.toml.")
+    .option("--global-binary", "Use the global codex-cc-tools-mcp binary instead of npx.")
+    .option("--no-enabled-tools", "Omit enabled_tools for older Codex clients.")
+    .action(async (options) => {
+      await installRunner({
+        packageSpec: options.packageSpec,
+        configPath: options.configPath,
+        globalBinary: options.globalBinary,
+        includeEnabledTools: options.enabledTools
+      });
+    });
+
+  program
     .command("doctor")
-    .description("Print the current task and provider registry.")
-    .action(() => {
-      const tasks = getTaskDefinitions().map((task) => task.name).join(", ");
-      const providers = getProviderProfiles().map((provider) => provider.name).join(", ");
-      process.stdout.write(`tasks: ${tasks}\nproviders: ${providers}\n`);
+    .description("Check Node, Codex, Claude Code, MCP config, and provider setup.")
+    .option("--config-path <path>", "Codex config path; defaults to ~/.codex/config.toml.")
+    .option("--strict", "Exit non-zero when required diagnostics fail.")
+    .action(async (options) => {
+      await doctorRunner({
+        configPath: options.configPath,
+        strict: options.strict
+      });
+    });
+
+  program
+    .command("uninstall")
+    .description("Remove codex-cc-tools MCP config from Codex.")
+    .option("--config-path <path>", "Codex config path; defaults to ~/.codex/config.toml.")
+    .action(async (options) => {
+      await uninstallRunner({
+        configPath: options.configPath
+      });
     });
 
   program
@@ -47,7 +85,10 @@ export function createProgram(deps: CreateProgramDeps = {}): Command {
     .description("Run Claude Code on a Codex-provided prompt.")
     .requiredOption("--prompt <prompt>", "Complete prompt to pass to Claude Code.")
     .option("--cwd <path>", "Working directory for the Claude Code subprocess.")
-    .option("--provider-profile <profile>", "Provider profile: deepseek by default, or anthropic.")
+    .option(
+      "--provider-profile <profile>",
+      "Provider profile: deepseek by default; also supports anthropic or ark_coding_plan."
+    )
     .option("--model <model>", "Claude Code model or provider alias.")
     .option("--effort <level>", "Claude Code effort level.")
     .option("--timeout-ms <number>", "Claude Code subprocess timeout.")
@@ -90,7 +131,7 @@ export function createProgram(deps: CreateProgramDeps = {}): Command {
     .option("--no-include-hook-events", "Do not request hook stream events.")
     .option("--no-verbose", "Do not request verbose stream events.")
     .option("--cache-ttl <ttl>", "Prompt cache TTL.")
-    .option("--provider-profile <profile>", "Provider profile: anthropic or deepseek.")
+    .option("--provider-profile <profile>", "Provider profile: anthropic, deepseek, or ark_coding_plan.")
     .action(async (options) => {
       await reviewRunner(options);
     });

@@ -13,7 +13,7 @@ Claude Code task tools for Codex via MCP.
 
 `codex-cc-tools` is the successor-style tool family to the narrower `codex-cc-reviewer` package. It keeps the same Codex-facing architecture, but keeps the public surface intentionally small:
 
-- provider profile: which Claude Code backend to use, currently `anthropic` or `deepseek`
+- provider profile: which Claude Code backend to use: `anthropic`, `deepseek`, or `ark_coding_plan`
 - task: what Codex is asking for, currently `review` or `delegate`
 - authority: read-only review or potentially destructive delegated Claude Code execution
 - result contract: structured output that Codex can inspect, synthesize, accept, reject, or defer
@@ -26,6 +26,7 @@ Requirements:
 - npm or npx
 - Claude Code CLI on `PATH`; `claude --version` should work
 - A DeepSeek API key if you use `cc_delegate` without overriding `providerProfile`
+- An Ark Coding Plan API key if you explicitly use `providerProfile: "ark_coding_plan"`
 - Claude Code authenticated locally if you use the native `anthropic` provider profile
 - Codex or another MCP client that can launch a stdio MCP server
 
@@ -43,6 +44,27 @@ Or run without global install:
 npx --prefer-online -y codex-cc-tools@latest --version
 npx --prefer-online -y codex-cc-tools@latest doctor
 ```
+
+### Codex MCP Config Management
+
+The CLI can install and uninstall the `codex_cc_tools` MCP config block in your
+Codex configuration file:
+
+```bash
+# Install with npx launch mode (default)
+codex-cc-tools install
+
+# Install with global binary launch mode (requires global install first)
+codex-cc-tools install --global-binary
+
+# Remove the codex_cc_tools config block
+codex-cc-tools uninstall
+```
+
+`codex-cc-tools install` writes a `[mcp_servers.codex_cc_tools]` block to
+`~/.codex/config.toml`. An existing block is updated in place. Use a custom
+config path with `--config-path <path>`. Use a specific package spec with
+`--package-spec <spec>` (default: `codex-cc-tools@latest`).
 
 For stable day-to-day use, pin the MCP config to a known version such as `codex-cc-tools@0.1.0`. Use `@latest` for quick setup and stable auto-updates. Use `@next` only for prerelease validation.
 
@@ -121,6 +143,52 @@ DeepSeek model inputs accepted by this package:
 | `deepseek-v4-pro[1m]` | `deepseek-v4-pro[1m]` |
 | `deepseek-v4-flash` | `deepseek-v4-flash` |
 
+For Ark Coding Plan, the MCP server process must start with one of these
+environment variables:
+
+```bash
+export ARK_API_KEY="your-ark-api-key"
+# or
+export VOLCENGINE_API_KEY="your-ark-api-key"
+```
+
+`ARK_API_KEY` wins when both are present. Optional override:
+
+```bash
+ARK_CODING_PLAN_ANTHROPIC_BASE_URL=https://ark.cn-beijing.volces.com/api/coding
+```
+
+Most users should not set the override. This package drives Claude Code through
+Anthropic-compatible environment variables, so `ark_coding_plan` defaults to
+the Ark Coding Plan Anthropic-compatible endpoint
+`https://ark.cn-beijing.volces.com/api/coding`. The OpenAI-compatible endpoint
+`https://ark.cn-beijing.volces.com/api/coding/v3` is for OpenAI-wire clients
+such as Codex model providers, not this Claude Code provider profile.
+
+When `providerProfile: "ark_coding_plan"` is used, the package builds a
+per-child-process Claude Code route:
+
+- `ANTHROPIC_BASE_URL=https://ark.cn-beijing.volces.com/api/coding`
+- `ANTHROPIC_AUTH_TOKEN=<resolved Ark Coding Plan key>`
+- `ANTHROPIC_MODEL=<resolved requested model>`
+- `ANTHROPIC_DEFAULT_OPUS_MODEL=doubao-seed-2.0-pro`
+- `ANTHROPIC_DEFAULT_SONNET_MODEL=doubao-seed-2.0-pro`
+- `ANTHROPIC_DEFAULT_HAIKU_MODEL=doubao-seed-2.0-pro`
+- `ANTHROPIC_SMALL_FAST_MODEL=doubao-seed-2.0-pro`
+- `CLAUDE_CODE_SUBAGENT_MODEL=doubao-seed-2.0-pro`
+- `CLAUDE_CODE_EFFORT_LEVEL=<requested effort>`
+
+Ark Coding Plan model inputs accepted by this package:
+
+| Input model | Ark Coding Plan model used |
+| --- | --- |
+| `opus` | `doubao-seed-2.0-pro` |
+| `sonnet` | `doubao-seed-2.0-pro` |
+| `haiku` | `doubao-seed-2.0-pro` |
+| `Doubao-Seed-2.0-pro` | `doubao-seed-2.0-pro` |
+| `doubao-seed-2.0-pro` | `doubao-seed-2.0-pro` |
+| any other non-empty string | passed through as a direct Ark model name |
+
 ## Tools
 
 | MCP tool | CLI command | Authority | Use it for |
@@ -141,7 +209,7 @@ Treat Claude Code output as advisory evidence; Codex must accept, reject, or def
 
 All tools accept:
 
-- `providerProfile`: `cc_review` defaults to `anthropic`; `cc_delegate` defaults to `deepseek`
+- `providerProfile`: `cc_review` defaults to `anthropic`; `cc_delegate` defaults to `deepseek`; explicit values can be `anthropic`, `deepseek`, or `ark_coding_plan`
 - `model`: `opus` by default; provider aliases are resolved per profile
 - `effort`: `max` by default; one of `low`, `medium`, `high`, `max`
 - `cwd`: task working directory where applicable
@@ -189,8 +257,11 @@ and returns its own structured result.
 ## CLI Examples
 
 ```bash
+codex-cc-tools install
+codex-cc-tools install --global-binary
 codex-cc-tools doctor
 codex-cc-tools review --task review_doc --context "Smoke review only." --model haiku
+codex-cc-tools uninstall
 ```
 
 PowerShell `delegate` example:
@@ -212,14 +283,25 @@ codex-cc-tools review \
 
 Quote exact DeepSeek model names that contain brackets when passing them in a shell, for example `--model 'deepseek-v4-pro[1m]'`. The aliases `opus`, `sonnet`, and `haiku` avoid this issue.
 
+Ark Coding Plan CLI smoke:
+
+```bash
+export ARK_API_KEY="your-ark-api-key"
+codex-cc-tools review \
+  --provider-profile ark_coding_plan \
+  --model opus \
+  --task review_doc \
+  --context "Ark Coding Plan route smoke only. Report whether this review invocation works."
+```
+
 ## Safety And Configuration
 
 This package is designed for trusted local owner workflows. It does not make Claude Code safe for untrusted repositories by itself.
 
 | Setting | Default | Notes |
 | --- | --- | --- |
-| `providerProfile` | `cc_review`: `anthropic`; `cc_delegate`: `deepseek` | `anthropic` uses native Claude Code profile/auth. `deepseek` requires `DEEPSEEK_API_KEY` or `OPENAI_API_KEY_DEEPSEEK` in the MCP server environment. |
-| `model` | `opus` | In DeepSeek profile, `opus` and `sonnet` map to `deepseek-v4-pro[1m]`; `haiku` maps to `deepseek-v4-flash`. |
+| `providerProfile` | `cc_review`: `anthropic`; `cc_delegate`: `deepseek` | `anthropic` uses native Claude Code profile/auth. `deepseek` requires `DEEPSEEK_API_KEY` or `OPENAI_API_KEY_DEEPSEEK`; `ark_coding_plan` requires `ARK_API_KEY` or `VOLCENGINE_API_KEY`. |
+| `model` | `opus` | In DeepSeek profile, `opus` and `sonnet` map to `deepseek-v4-pro[1m]`; `haiku` maps to `deepseek-v4-flash`. In Ark Coding Plan, common aliases map to `doubao-seed-2.0-pro`; direct model names pass through. |
 | `effort` | `max` | Higher effort is slower and may cost more. On metered providers, use `medium` or `low` for routine checks. |
 | `cacheTtl` | `1h` | Adds Claude Code prompt-cache hint where supported; reported cache fields are provider/Claude Code estimates. |
 | `redactSecrets` | `true` for review packet evidence | Best-effort only; avoid sending secrets in prompts, files, and command output. |
@@ -242,6 +324,7 @@ Common issues:
 - Claude is not authenticated: run Claude Code interactively once and complete auth.
 - Codex does not show the tools: restart Codex after changing MCP config.
 - DeepSeek says credentials are missing: set `DEEPSEEK_API_KEY` or `OPENAI_API_KEY_DEEPSEEK` in the environment that starts Codex or the MCP server.
+- Ark Coding Plan says credentials are missing: set `ARK_API_KEY` or `VOLCENGINE_API_KEY` in the environment that starts Codex or the MCP server.
 - Setting the key in a terminal is not enough if Codex was launched elsewhere. Restart Codex from an environment that contains the variable, or set a persistent OS-level user variable.
 - DeepSeek dashboard shows no requests: compare the returned diagnostic, for example `DeepSeek route target: api.deepseek.com; token source: OPENAI_API_KEY_DEEPSEEK.`, with the key/account you are monitoring.
 - Anthropic env vars are unset: this is fine for the `anthropic` profile when native Claude Code auth works.
@@ -260,7 +343,7 @@ See [docs/troubleshooting.md](docs/troubleshooting.md).
 - `cc_review`: second-opinion review
 - `cc_delegate`: prompt-driven Claude Code execution, read-only or writable by prompt scope
 
-Provider routing is orthogonal to the task. DeepSeek is not a separate task; it is selected with `providerProfile: "deepseek"`.
+Provider routing is orthogonal to the task. DeepSeek and Ark Coding Plan are not separate tasks; they are selected with `providerProfile`.
 
 ## Documentation
 

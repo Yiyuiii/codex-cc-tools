@@ -36,6 +36,31 @@ The `deepseek` provider profile builds a fresh child-process route:
 
 `HTTP_PROXY`, `HTTPS_PROXY`, and `NO_PROXY` style variables are inherited. These are transport-level caller environment choices, not provider credentials. Maintainers should be aware that a proxy can observe transport metadata.
 
+## Ark Coding Plan Profile
+
+The `ark_coding_plan` provider profile builds a fresh child-process route:
+
+- Token source priority: `ARK_API_KEY`, then `VOLCENGINE_API_KEY`.
+- Base URL: `https://ark.cn-beijing.volces.com/api/coding`, the Ark Coding
+  Plan Anthropic-compatible endpoint for Claude Code.
+- Optional override: `ARK_CODING_PLAN_ANTHROPIC_BASE_URL`, accepted only when
+  it is a valid HTTPS URL. `ARK_CODING_PLAN_BASE_URL` is also accepted as a
+  compatibility alias, but new docs should prefer the explicit Anthropic name.
+- Model aliases: `opus`, `sonnet`, and `haiku` map to
+  `doubao-seed-2.0-pro`. `Doubao-Seed-2.0-pro` is normalized to
+  `doubao-seed-2.0-pro`; other non-empty model names pass through directly for
+  Ark-side model switching.
+- Ark Coding Plan profile removes inherited Anthropic, Bedrock, Vertex,
+  DeepSeek, Ark, and provider-token variables before injecting its route.
+- Successful Ark provider construction adds a non-secret diagnostic to task
+  results with the route host and token source variable, for example
+  `Ark Coding Plan route target: ark.cn-beijing.volces.com; token source: ARK_API_KEY.`.
+
+The OpenAI-compatible Ark Coding Plan endpoint
+`https://ark.cn-beijing.volces.com/api/coding/v3` is intentionally not the
+default here because this MCP tool drives Claude Code through
+Anthropic-compatible environment variables.
+
 ## Redaction Boundary
 
 Provider-token redaction is best-effort and applies to strings, nested arrays/objects, errors, stderr tails, structured outputs, and activity events returned by the runner. It is not a substitute for avoiding secrets in prompts, repository files, or command output.

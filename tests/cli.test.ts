@@ -20,8 +20,37 @@ describe("codex-cc-tools CLI", () => {
       cwd: process.cwd()
     });
 
-    expect(result.stdout).toContain("tasks: review, delegate");
-    expect(result.stdout).toContain("providers: anthropic, deepseek");
+    expect(result.stdout).toContain("codex-cc-tools doctor");
+    expect(result.stdout).toContain("Tasks: review, delegate");
+    expect(result.stdout).toContain("Providers: anthropic, deepseek, ark_coding_plan");
+    expect(result.stdout).toContain("MCP tool names: cc_review, cc_delegate");
+  });
+
+  it("parses doctor config path and strict options", async () => {
+    let observedOptions: Record<string, unknown> | undefined;
+    const program = createProgram({
+      runDoctor: async (options) => {
+        observedOptions = options as Record<string, unknown>;
+        return [];
+      }
+    });
+
+    await program.parseAsync(
+      [
+        "node",
+        "codex-cc-tools",
+        "doctor",
+        "--config-path",
+        "D:\\Codes\\repo\\.codex\\config.toml",
+        "--strict"
+      ],
+      { from: "node" }
+    );
+
+    expect(observedOptions).toMatchObject({
+      configPath: "D:\\Codes\\repo\\.codex\\config.toml",
+      strict: true
+    });
   });
 
   it("exposes review, delegate, and mcp commands in help output", async () => {
@@ -31,6 +60,8 @@ describe("codex-cc-tools CLI", () => {
 
     expect(result.stdout).toContain("review");
     expect(result.stdout).toContain("delegate");
+    expect(result.stdout).toContain("install");
+    expect(result.stdout).toContain("uninstall");
     expect(result.stdout).toContain("mcp");
     expect(result.stdout).not.toMatch(/^\s+research\b/m);
     expect(result.stdout).not.toMatch(/^\s+verify\b/m);
@@ -42,10 +73,10 @@ describe("codex-cc-tools CLI", () => {
     const review = program.commands.find((command) => command.name() === "review");
 
     expect(delegate?.options.find((option) => option.long === "--provider-profile")?.description).toBe(
-      "Provider profile: deepseek by default, or anthropic."
+      "Provider profile: deepseek by default; also supports anthropic or ark_coding_plan."
     );
     expect(review?.options.find((option) => option.long === "--provider-profile")?.description).toBe(
-      "Provider profile: anthropic or deepseek."
+      "Provider profile: anthropic, deepseek, or ark_coding_plan."
     );
   });
 
@@ -124,6 +155,76 @@ describe("codex-cc-tools CLI", () => {
       prompt: "Edit the file.",
       cwd: "D:\\Codes\\repo-worktree",
       stream: false
+    });
+  });
+
+  it("parses install command options", async () => {
+    let observedOptions: Record<string, unknown> | undefined;
+    const program = createProgram({
+      installCodexConfig: async (options) => {
+        observedOptions = options as Record<string, unknown>;
+      }
+    });
+
+    await program.parseAsync(
+      [
+        "node",
+        "codex-cc-tools",
+        "install",
+        "--package-spec",
+        "codex-cc-tools@next",
+        "--config-path",
+        "D:\\Codes\\repo\\.codex\\config.toml",
+        "--no-enabled-tools"
+      ],
+      { from: "node" }
+    );
+
+    expect(observedOptions).toMatchObject({
+      packageSpec: "codex-cc-tools@next",
+      configPath: "D:\\Codes\\repo\\.codex\\config.toml",
+      includeEnabledTools: false
+    });
+  });
+
+  it("parses install global binary mode", async () => {
+    let observedOptions: Record<string, unknown> | undefined;
+    const program = createProgram({
+      installCodexConfig: async (options) => {
+        observedOptions = options as Record<string, unknown>;
+      }
+    });
+
+    await program.parseAsync(["node", "codex-cc-tools", "install", "--global-binary"], {
+      from: "node"
+    });
+
+    expect(observedOptions).toMatchObject({
+      globalBinary: true
+    });
+  });
+
+  it("parses uninstall command options", async () => {
+    let observedOptions: Record<string, unknown> | undefined;
+    const program = createProgram({
+      uninstallCodexConfig: async (options) => {
+        observedOptions = options as Record<string, unknown>;
+      }
+    });
+
+    await program.parseAsync(
+      [
+        "node",
+        "codex-cc-tools",
+        "uninstall",
+        "--config-path",
+        "D:\\Codes\\repo\\.codex\\config.toml"
+      ],
+      { from: "node" }
+    );
+
+    expect(observedOptions).toMatchObject({
+      configPath: "D:\\Codes\\repo\\.codex\\config.toml"
     });
   });
 });

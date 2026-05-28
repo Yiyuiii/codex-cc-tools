@@ -10,7 +10,7 @@ When communicating with the maintainer, use Chinese for explanations, progress r
 
 `codex-cc-tools` is a larger tool family, not a rename of `codex-cc-reviewer`.
 
-- Provider profiles describe which backend drives Claude Code: `anthropic`, `deepseek`, and future compatible providers.
+- Provider profiles describe which backend drives Claude Code: `anthropic`, `deepseek`, `ark_coding_plan`, and future compatible providers.
 - Tasks describe what Codex asks Claude Code to do: `review` and `delegate`.
 - Execution policy describes MCP metadata only: `review` is read-only; `delegate` is destructive because it asks Claude Code to work. Execution-space policy is outside this MCP tool.
 
@@ -26,7 +26,7 @@ Do not silently change that repository while working here.
 
 - `docs/architecture.md` is the main architecture reference.
 - `docs/migration-from-reviewer.md` records how this repository should reuse or migrate the reviewer code.
-- `docs/security.md` records provider environment inheritance, DeepSeek child-process routing, and provider-token redaction boundaries.
+- `docs/security.md` records provider environment inheritance, DeepSeek / Ark Coding Plan child-process routing, and provider-token redaction boundaries.
 - `docs/delegate-safety.md` records the active `delegate` boundary. The filename is historical; the current contract is a thin Claude Code bridge, not execution-space management.
 - `docs/research/delegate-writable-smoke.md` records historical writable `delegate` smoke runs from the superseded safety-heavy CLI.
 - `docs/research/deepseek-claude-code-env.md` records the latest checked DeepSeek Claude Code environment matrix.
@@ -34,6 +34,7 @@ Do not silently change that repository while working here.
 - `docs/research/deepseek-routing-smoke.md` records route-specific DeepSeek smoke evidence and the backend-monitoring caveat.
 - `docs/superpowers/plans/` stores implementation plans for longer work.
 - `docs/superpowers/plans/2026-05-22-long-term-completion.md` is the current long-term completion plan for the full tool family.
+- `docs/superpowers/plans/2026-05-22-install-doctor-docs-maturity.md` is the active plan for install/uninstall commands, meaningful doctor diagnostics, and public maturity docs/examples.
 - `docs/superpowers/plans/2026-05-22-delegate-implementation.md` is the historical reviewed-safety `delegate` implementation plan; it is superseded by the thin delegate contract.
 
 Update these documents when structure, API boundaries, or migration assumptions change.
@@ -56,9 +57,12 @@ Use TDD for behavior-bearing code. Keep early phases small: first establish the 
 - Milestone 8 final acceptance and initial stable publication is complete: `0.1.0-beta.1` was published to npm `next`, then `v0.1.0` was promoted to npm `latest` through GitHub Actions Trusted Publishing on 2026-05-22. Deterministic checks passed, real Anthropic/inherited Claude Code smoke ran, DeepSeek CLI smoke passed via `OPENAI_API_KEY_DEEPSEEK`, and DeepSeek review reliability is documented as passed for the implemented `review` task.
 - DeepSeek routing follow-up on 2026-05-22 found that this local environment uses `OPENAI_API_KEY_DEEPSEEK` rather than `DEEPSEEK_API_KEY`. Positive and negative routing smokes support that the Claude Code child process honors the injected DeepSeek route, but historical quality-gate artifacts did not record route host or token source. Task diagnostics now include a non-secret DeepSeek route line for future backend-monitoring reconciliation.
 - Release publishing follows the reviewer package pattern: GitHub Actions release workflow publishes version tags through npm Trusted Publishing. Tags containing a prerelease suffix publish to npm `next` from branch `next`; stable tags publish to `latest` from `main` and require `.release-validation/v<version>.md`.
-- Public-user docs were expanded after `v0.1.0` to clarify required runtime inputs: default `anthropic` uses native Claude Code auth and does not require `ANTHROPIC_AUTH_TOKEN` or `ANTHROPIC_API_KEY`; `deepseek` requires `DEEPSEEK_API_KEY` or `OPENAI_API_KEY_DEEPSEEK` in the environment that starts Codex or the MCP server.
+- Public-user docs were expanded after `v0.1.0` to clarify required runtime inputs: default `anthropic` uses native Claude Code auth and does not require `ANTHROPIC_AUTH_TOKEN` or `ANTHROPIC_API_KEY`; `deepseek` requires `DEEPSEEK_API_KEY` or `OPENAI_API_KEY_DEEPSEEK`; `ark_coding_plan` requires `ARK_API_KEY` or `VOLCENGINE_API_KEY` when explicitly selected.
 - Current delegate default: `cc_delegate` defaults to `providerProfile: "deepseek"` and is described as an autonomous delegated-subtask tool, usable for read-only investigation or writable implementation when the prompt states the intended scope. `cc_review` continues to default to `anthropic`.
 - Maintainer intent for `cc_delegate`: treat it as a low-cost DeepSeek V4 Pro worker for independent subtasks, not as a rare high-risk-only tool. Actively consider delegating local, lower-coupling work; multiple `cc_delegate` calls may run in parallel when their write scopes do not overlap or when they are read-only. Record observed model collaboration quality in project/global memory while distinguishing maintainer intent from later AI observations.
+- 2026-05-22 maturity work is complete: installer/uninstaller config management for `codex_cc_tools`, actionable doctor diagnostics, public maturity docs/files, package file checks, and release smoke updates are implemented. The execution plan and completion note are in `docs/superpowers/plans/2026-05-22-install-doctor-docs-maturity.md`.
+- Model collaboration note from the 2026-05-22 maturity work: `cc_delegate` was useful for bounded documentation generation across root docs, `docs/`, and `examples/` when given a tight write scope. `cc_review` caught several real correctness issues in config mutation and packaging/doc drift, including TOML subtable scoping, uninstall no-op behavior, comment preservation, and preserving existing npx/global launch choices. Its findings still need technical filtering: one high-severity claim about duplicate `enabled_tools` in subtables overstated TOML corruption risk, but it led to a conservative regression test.
+- 2026-05-28 provider update: `ark_coding_plan` is implemented as an explicit experimental provider profile. It reads `ARK_API_KEY` first, then `VOLCENGINE_API_KEY`, injects the Ark Coding Plan Anthropic-compatible Claude Code endpoint `https://ark.cn-beijing.volces.com/api/coding`, maps `opus` / `sonnet` / `haiku` and `Doubao-Seed-2.0-pro` to `doubao-seed-2.0-pro`, and leaves `cc_delegate` defaulting to `deepseek`. The OpenAI-compatible endpoint `https://ark.cn-beijing.volces.com/api/coding/v3` is documented as not being the default for this Claude Code route.
 
 Standard local checks:
 

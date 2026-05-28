@@ -166,4 +166,105 @@ describe("provider environment", () => {
       error: expect.stringContaining("https")
     });
   });
+
+  it("injects Ark Coding Plan env per invocation and removes inherited provider route variables", () => {
+    const result = buildProviderEnvironment({
+      provider: "ark_coding_plan",
+      model: "opus",
+      effort: "high",
+      cacheTtl: "1h",
+      sourceEnv: {
+        ARK_API_KEY: "ark-token",
+        VOLCENGINE_API_KEY: "fallback-token",
+        ARK_CODING_PLAN_ANTHROPIC_BASE_URL: " https://ark.example.test/api/coding ",
+        DEEPSEEK_API_KEY: "stale-deepseek-token",
+        ANTHROPIC_API_KEY: "stale-anthropic-key",
+        ANTHROPIC_AUTH_TOKEN: "stale-auth-token",
+        ANTHROPIC_BASE_URL: "https://stale.example.test",
+        ANTHROPIC_MODEL: "claude-opus",
+        ANTHROPIC_DEFAULT_OPUS_MODEL: "claude-opus",
+        ANTHROPIC_DEFAULT_SONNET_MODEL: "claude-sonnet",
+        ANTHROPIC_DEFAULT_HAIKU_MODEL: "claude-haiku",
+        ANTHROPIC_SMALL_FAST_MODEL: "claude-haiku",
+        CLAUDE_CODE_SUBAGENT_MODEL: "claude-haiku",
+        HTTPS_PROXY: "http://proxy.example.test:8080"
+      }
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.model).toBe("doubao-seed-2.0-pro");
+    expect(result.env).toMatchObject({
+      ANTHROPIC_BASE_URL: "https://ark.example.test/api/coding",
+      ANTHROPIC_AUTH_TOKEN: "ark-token",
+      ANTHROPIC_MODEL: "doubao-seed-2.0-pro",
+      ANTHROPIC_DEFAULT_OPUS_MODEL: "doubao-seed-2.0-pro",
+      ANTHROPIC_DEFAULT_SONNET_MODEL: "doubao-seed-2.0-pro",
+      ANTHROPIC_DEFAULT_HAIKU_MODEL: "doubao-seed-2.0-pro",
+      ANTHROPIC_SMALL_FAST_MODEL: "doubao-seed-2.0-pro",
+      CLAUDE_CODE_SUBAGENT_MODEL: "doubao-seed-2.0-pro",
+      CLAUDE_CODE_EFFORT_LEVEL: "high",
+      CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: "1",
+      ENABLE_PROMPT_CACHING_1H: "1",
+      HTTPS_PROXY: "http://proxy.example.test:8080"
+    });
+    expect(result.env).not.toHaveProperty("ARK_API_KEY");
+    expect(result.env).not.toHaveProperty("VOLCENGINE_API_KEY");
+    expect(result.env).not.toHaveProperty("ARK_CODING_PLAN_ANTHROPIC_BASE_URL");
+    expect(result.env).not.toHaveProperty("DEEPSEEK_API_KEY");
+    expect(result.env).not.toHaveProperty("ANTHROPIC_API_KEY");
+    expect(result.env).not.toHaveProperty("ANTHROPIC_AUTH_TOKEN", "stale-auth-token");
+    expect(result.redactions).toEqual(["ark-token", "fallback-token"]);
+    expect(result.diagnostics).toEqual([
+      "Ark Coding Plan route target: ark.example.test; token source: ARK_API_KEY."
+    ]);
+  });
+
+  it("uses VOLCENGINE_API_KEY as fallback and rejects missing or invalid Ark Coding Plan config", () => {
+    expect(
+      buildProviderEnvironment({
+        provider: "ark_coding_plan",
+        model: "Doubao-Seed-2.0-pro",
+        effort: "medium",
+        cacheTtl: "1h",
+        sourceEnv: { VOLCENGINE_API_KEY: "fallback-token" }
+      })
+    ).toMatchObject({
+      ok: true,
+      model: "doubao-seed-2.0-pro",
+      diagnostics: [
+        "Ark Coding Plan route target: ark.cn-beijing.volces.com; token source: VOLCENGINE_API_KEY."
+      ],
+      redactions: ["fallback-token"]
+    });
+
+    expect(
+      buildProviderEnvironment({
+        provider: "ark_coding_plan",
+        model: "opus",
+        effort: "medium",
+        cacheTtl: "1h",
+        sourceEnv: {}
+      })
+    ).toMatchObject({
+      ok: false,
+      error: expect.stringContaining("ARK_API_KEY")
+    });
+
+    expect(
+      buildProviderEnvironment({
+        provider: "ark_coding_plan",
+        model: "opus",
+        effort: "medium",
+        cacheTtl: "1h",
+        sourceEnv: {
+          ARK_API_KEY: " ark-token ",
+          ARK_CODING_PLAN_ANTHROPIC_BASE_URL: "http://ark.example.test/api/coding"
+        }
+      })
+    ).toMatchObject({
+      ok: false,
+      redactions: ["ark-token"],
+      error: expect.stringContaining("https")
+    });
+  });
 });

@@ -28,7 +28,7 @@ describe("CcReviewInputSchema", () => {
     expect(parsed.providerProfile).toBe("anthropic");
   });
 
-  it("accepts DeepSeek provider profile and rejects unknown keys", () => {
+  it("accepts non-default provider profiles and rejects unknown keys", () => {
     expect(
       CcReviewInputSchema.parse({
         task: "review_doc",
@@ -36,6 +36,13 @@ describe("CcReviewInputSchema", () => {
         providerProfile: "deepseek"
       }).providerProfile
     ).toBe("deepseek");
+    expect(
+      CcReviewInputSchema.parse({
+        task: "review_doc",
+        context: "Review this document.",
+        providerProfile: "ark_coding_plan"
+      }).providerProfile
+    ).toBe("ark_coding_plan");
 
     expect(() =>
       CcReviewInputSchema.parse({

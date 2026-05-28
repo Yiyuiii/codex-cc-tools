@@ -8,7 +8,7 @@
 
 本仓库不是 `codex-cc-reviewer` 的重命名，而是同一架构下更聚焦的工具族：
 
-- provider profile：Claude Code 使用哪个后端，例如 `anthropic` 或 `deepseek`
+- provider profile：Claude Code 使用哪个后端，例如 `anthropic`、`deepseek` 或 `ark_coding_plan`
 - task：Codex 要 Claude Code 做什么，目前是 `review` 或 `delegate`
 - authority：只读审阅或显式工作区写入
 - result contract：返回 Codex 可以直接综合、采纳、拒绝或搁置的结构化结果
@@ -21,6 +21,7 @@
 - npm 或 npx
 - 本机可运行 `claude`，并且 `claude --version` 应该成功
 - 使用 `cc_delegate` 且不覆盖 `providerProfile` 时需要 DeepSeek API key
+- 显式使用 `providerProfile: "ark_coding_plan"` 时需要 Ark Coding Plan API key
 - 如果使用原生 `anthropic` provider profile，需要 Claude Code 已完成本地登录或配置
 - Codex 或其他支持 stdio MCP server 的客户端
 
@@ -38,6 +39,26 @@ codex-cc-tools doctor
 npx --prefer-online -y codex-cc-tools@latest --version
 npx --prefer-online -y codex-cc-tools@latest doctor
 ```
+
+### Codex MCP 配置管理
+
+CLI 可以在 Codex 配置文件中安装和卸载 `codex_cc_tools` MCP 配置块：
+
+```bash
+# 以 npx 启动模式安装（默认）
+codex-cc-tools install
+
+# 以全局二进制启动模式安装（需先全局安装）
+codex-cc-tools install --global-binary
+
+# 移除 codex_cc_tools 配置块
+codex-cc-tools uninstall
+```
+
+`codex-cc-tools install` 将 `[mcp_servers.codex_cc_tools]` 配置块写入
+`~/.codex/config.toml`。已有配置块会原地更新。可使用 `--config-path <path>`
+指定自定义配置路径，使用 `--package-spec <spec>` 指定包版本
+（默认：`codex-cc-tools@latest`）。
 
 日常稳定使用时，可以把 MCP 配置 pin 到已知版本，例如 `codex-cc-tools@0.1.0`。`@latest` 适合快速配置和接收稳定更新，`@next` 只用于 prerelease 验证。
 
@@ -116,6 +137,45 @@ DeepSeek profile 接受的模型参数：
 | `deepseek-v4-pro[1m]` | `deepseek-v4-pro[1m]` |
 | `deepseek-v4-flash` | `deepseek-v4-flash` |
 
+如果要使用 Ark Coding Plan，需要在启动 Codex 或 MCP server 的环境里设置其中一个：
+
+```bash
+export ARK_API_KEY="your-ark-api-key"
+# 或
+export VOLCENGINE_API_KEY="your-ark-api-key"
+```
+
+同时存在时优先使用 `ARK_API_KEY`。可选覆盖：
+
+```bash
+ARK_CODING_PLAN_ANTHROPIC_BASE_URL=https://ark.cn-beijing.volces.com/api/coding
+```
+
+普通用户不需要设置这个覆盖项。本包通过 Claude Code 的 Anthropic-compatible 环境变量路由，所以 `ark_coding_plan` 默认使用 Ark Coding Plan 的 Anthropic-compatible 端点 `https://ark.cn-beijing.volces.com/api/coding`。`https://ark.cn-beijing.volces.com/api/coding/v3` 是给 OpenAI-wire 客户端使用的端点，不是这个 Claude Code provider profile 的默认端点。
+
+当调用时传入 `providerProfile: "ark_coding_plan"`，本包会为 Claude Code 子进程临时构造 Ark Coding Plan 路由：
+
+- `ANTHROPIC_BASE_URL=https://ark.cn-beijing.volces.com/api/coding`
+- `ANTHROPIC_AUTH_TOKEN=<解析到的 Ark Coding Plan key>`
+- `ANTHROPIC_MODEL=<解析后的请求模型>`
+- `ANTHROPIC_DEFAULT_OPUS_MODEL=doubao-seed-2.0-pro`
+- `ANTHROPIC_DEFAULT_SONNET_MODEL=doubao-seed-2.0-pro`
+- `ANTHROPIC_DEFAULT_HAIKU_MODEL=doubao-seed-2.0-pro`
+- `ANTHROPIC_SMALL_FAST_MODEL=doubao-seed-2.0-pro`
+- `CLAUDE_CODE_SUBAGENT_MODEL=doubao-seed-2.0-pro`
+- `CLAUDE_CODE_EFFORT_LEVEL=<请求的 effort>`
+
+Ark Coding Plan profile 接受的模型参数：
+
+| 输入模型 | 实际 Ark Coding Plan 模型 |
+| --- | --- |
+| `opus` | `doubao-seed-2.0-pro` |
+| `sonnet` | `doubao-seed-2.0-pro` |
+| `haiku` | `doubao-seed-2.0-pro` |
+| `Doubao-Seed-2.0-pro` | `doubao-seed-2.0-pro` |
+| `doubao-seed-2.0-pro` | `doubao-seed-2.0-pro` |
+| 其它非空字符串 | 作为 Ark 模型名直接传入 |
+
 ## 工具
 
 | MCP 工具 | CLI 命令 | 权限 | 用途 |
@@ -136,7 +196,7 @@ Claude Code 的输出是建议性证据，Codex 必须明确说明采纳、拒�
 
 所有工具都支持：
 
-- `providerProfile`：`cc_review` 默认 `anthropic`；`cc_delegate` 默认 `deepseek`
+- `providerProfile`：`cc_review` 默认 `anthropic`；`cc_delegate` 默认 `deepseek`；可显式传 `anthropic`、`deepseek` 或 `ark_coding_plan`
 - `model`：默认 `opus`，按 provider profile 解析别名
 - `effort`：默认 `max`，可选 `low`、`medium`、`high`、`max`
 - `cwd`：适用任务的工作目录
@@ -175,8 +235,11 @@ Claude Code 的输出是建议性证据，Codex 必须明确说明采纳、拒�
 ## CLI 示例
 
 ```bash
+codex-cc-tools install
+codex-cc-tools install --global-binary
 codex-cc-tools doctor
 codex-cc-tools review --task review_doc --context "Smoke review only." --model haiku
+codex-cc-tools uninstall
 ```
 
 PowerShell `delegate` 示例：
@@ -198,14 +261,25 @@ codex-cc-tools review \
 
 在 shell 里直接传带方括号的 DeepSeek 模型名时需要加引号，例如 `--model 'deepseek-v4-pro[1m]'`。使用 `opus`、`sonnet`、`haiku` 这些别名可以避开这个问题。
 
+Ark Coding Plan CLI 冒烟：
+
+```bash
+export ARK_API_KEY="your-ark-api-key"
+codex-cc-tools review \
+  --provider-profile ark_coding_plan \
+  --model opus \
+  --task review_doc \
+  --context "Ark Coding Plan route smoke only. Report whether this review invocation works."
+```
+
 ## 安全边界
 
 本包面向可信本地 owner workflow。它不会把 Claude Code 变成可安全处理不可信代码库的沙箱。
 
 | 设置 | 默认值 | 说明 |
 | --- | --- | --- |
-| `providerProfile` | `cc_review`: `anthropic`; `cc_delegate`: `deepseek` | `anthropic` 使用原生 Claude Code profile/auth。`deepseek` 需要 MCP server 环境里有 `DEEPSEEK_API_KEY` 或 `OPENAI_API_KEY_DEEPSEEK`。 |
-| `model` | `opus` | DeepSeek profile 中，`opus` 和 `sonnet` 映射到 `deepseek-v4-pro[1m]`，`haiku` 映射到 `deepseek-v4-flash`。 |
+| `providerProfile` | `cc_review`: `anthropic`; `cc_delegate`: `deepseek` | `anthropic` 使用原生 Claude Code profile/auth。`deepseek` 需要 `DEEPSEEK_API_KEY` 或 `OPENAI_API_KEY_DEEPSEEK`；`ark_coding_plan` 需要 `ARK_API_KEY` 或 `VOLCENGINE_API_KEY`。 |
+| `model` | `opus` | DeepSeek profile 中，`opus` 和 `sonnet` 映射到 `deepseek-v4-pro[1m]`，`haiku` 映射到 `deepseek-v4-flash`。Ark Coding Plan 中常见别名映射到 `doubao-seed-2.0-pro`，其它模型名直接传入。 |
 | `effort` | `max` | 更慢，也可能更贵。对按量计费 provider，常规检查建议改成 `medium` 或 `low`。 |
 | `cacheTtl` | `1h` | 给 Claude Code prompt cache 的提示；cache 和 cost 字段以 Claude Code/provider 报告为准。 |
 | `redactSecrets` | review 证据默认 `true` | 只是尽力脱敏；不要把秘密放进 prompt、文件或命令输出。 |
@@ -226,6 +300,7 @@ codex-cc-tools doctor
 - Claude 未登录：先交互式运行一次 Claude Code 并完成认证。
 - Codex 看不到工具：修改 MCP 配置后重启 Codex。
 - DeepSeek 提示缺少凭据：在启动 Codex 或 MCP server 的环境里设置 `DEEPSEEK_API_KEY` 或 `OPENAI_API_KEY_DEEPSEEK`。
+- Ark Coding Plan 提示缺少凭据：在启动 Codex 或 MCP server 的环境里设置 `ARK_API_KEY` 或 `VOLCENGINE_API_KEY`。
 - 只在某个终端里设置 key 不够，除非 Codex/MCP server 也是从这个终端启动的。请从包含该变量的环境重启 Codex，或设置 OS 级持久用户变量。
 - DeepSeek 控制台没有请求：对照返回诊断里的 token source，例如 `DeepSeek route target: api.deepseek.com; token source: OPENAI_API_KEY_DEEPSEEK.`，确认监控的是同一个 key/账号。
 - `ANTHROPIC_AUTH_TOKEN` / `ANTHROPIC_API_KEY` 为空：`anthropic` profile 下这不是错误，只要原生 Claude Code auth 可用即可。
@@ -244,7 +319,7 @@ codex-cc-tools doctor
 - `cc_review`：第二意见审阅
 - `cc_delegate`：由 prompt 驱动的 Claude Code 执行，可按任务范围只读或写入
 
-Provider routing 与 task 正交。DeepSeek 不是一个任务，而是通过 `providerProfile: "deepseek"` 选择的后端。
+Provider routing 与 task 正交。DeepSeek 和 Ark Coding Plan 都不是任务，而是通过 `providerProfile` 选择的后端。
 
 ## 文档
 

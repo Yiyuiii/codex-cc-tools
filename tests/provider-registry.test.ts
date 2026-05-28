@@ -7,7 +7,7 @@ import {
 } from "../src/providers/registry.js";
 
 describe("provider registry", () => {
-  it("exposes anthropic and deepseek provider profiles", () => {
+  it("exposes anthropic, deepseek, and Ark Coding Plan provider profiles", () => {
     expect(getProviderProfiles()).toEqual([
       {
         name: "anthropic",
@@ -18,6 +18,11 @@ describe("provider registry", () => {
         name: "deepseek",
         role: "DeepSeek Anthropic-compatible Claude Code provider",
         experimental: false
+      },
+      {
+        name: "ark_coding_plan",
+        role: "Volcengine Ark Coding Plan Claude Code provider",
+        experimental: true
       }
     ]);
   });
@@ -40,9 +45,22 @@ describe("provider registry", () => {
     });
   });
 
+  it("maps common Claude Code aliases for the Ark Coding Plan provider", () => {
+    expect(resolveProviderProfile("ark_coding_plan", "opus")).toEqual({
+      provider: "ark_coding_plan",
+      model: "doubao-seed-2.0-pro",
+      subagentModel: "doubao-seed-2.0-pro",
+      experimental: true
+    });
+    expect(resolveProviderProfile("ark_coding_plan", "Doubao-Seed-2.0-pro").model).toBe(
+      "doubao-seed-2.0-pro"
+    );
+  });
+
   it("validates provider profile names with zod", () => {
     expect(ProviderProfileSchema.parse("anthropic")).toBe("anthropic");
     expect(ProviderProfileSchema.parse("deepseek")).toBe("deepseek");
+    expect(ProviderProfileSchema.parse("ark_coding_plan")).toBe("ark_coding_plan");
     expect(() => ProviderProfileSchema.parse("unknown")).toThrow();
   });
 });

@@ -26,7 +26,7 @@ claude -p "<prompt>"
 
 The MCP tool adds only:
 
-- provider-profile routing such as `anthropic` or `deepseek`
+- provider-profile routing such as `anthropic`, `deepseek`, or `ark_coding_plan`
 - model, effort, cache, stream, timeout, and working-directory options
 - process execution and cancellation handling
 - structured result parsing and formatting
@@ -118,6 +118,14 @@ Code child process through the DeepSeek Anthropic-compatible endpoint. The
 default model alias remains `opus`, which maps to DeepSeek V4 Pro in the
 DeepSeek profile. Claude Code subagents are configured by the provider
 environment as documented in `docs/security.md`.
+
+## Ark Coding Plan Use
+
+Callers can set `providerProfile: "ark_coding_plan"` to route the Claude Code
+child process through Volcengine Ark Coding Plan. The profile uses Ark's
+Anthropic-compatible Coding Plan endpoint for Claude Code and maps common model
+aliases to `doubao-seed-2.0-pro`; full provider details are documented in
+`docs/security.md`.
 
 ## Test Expectations
 

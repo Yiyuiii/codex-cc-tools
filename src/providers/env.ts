@@ -1,5 +1,10 @@
 import type { ProviderProfileName } from "./registry.js";
 import {
+  ARK_CODING_PLAN_BASE_URL,
+  ARK_CODING_PLAN_PRO_MODEL,
+  resolveArkCodingPlanModel
+} from "./ark-coding-plan.js";
+import {
   DEEPSEEK_ALLOWED_MODEL_INPUTS,
   DEEPSEEK_BASE_URL,
   DEEPSEEK_FLASH_MODEL,
@@ -33,6 +38,10 @@ const PROVIDER_ENV_BLOCKLIST = [
   "DEEPSEEK_API_KEY",
   "OPENAI_API_KEY_DEEPSEEK",
   "DEEPSEEK_ANTHROPIC_BASE_URL",
+  "ARK_API_KEY",
+  "VOLCENGINE_API_KEY",
+  "ARK_CODING_PLAN_ANTHROPIC_BASE_URL",
+  "ARK_CODING_PLAN_BASE_URL",
   "ANTHROPIC_API_KEY",
   "ANTHROPIC_AUTH_TOKEN",
   "ANTHROPIC_BASE_URL",
@@ -82,11 +91,23 @@ export function buildProviderEnvironment(
     };
   }
 
+  if (input.provider === "deepseek") {
+    return buildDeepSeekEnvironment(input, sourceEnv, baseEnv);
+  }
+
+  return buildArkCodingPlanEnvironment(input, sourceEnv, baseEnv);
+}
+
+function buildDeepSeekEnvironment(
+  input: BuildProviderEnvironmentInput,
+  sourceEnv: Record<string, string>,
+  baseEnv: Record<string, string>
+): ProviderEnvironmentResult {
   const model = resolveDeepSeekModel(input.model);
   if (!model) {
     return {
       ok: false,
-      provider: input.provider,
+      provider: "deepseek",
       model: input.model,
       env: baseEnv,
       redactions: [],
@@ -127,7 +148,7 @@ export function buildProviderEnvironment(
 
   return {
     ok: true,
-    provider: input.provider,
+    provider: "deepseek",
     model,
     env: {
       ...omitProviderRouteEnv(baseEnv),
@@ -144,6 +165,68 @@ export function buildProviderEnvironment(
     },
     redactions,
     diagnostics: [deepSeekRouteDiagnostic(baseUrl.url, tokenSource)]
+  };
+}
+
+function buildArkCodingPlanEnvironment(
+  input: BuildProviderEnvironmentInput,
+  sourceEnv: Record<string, string>,
+  baseEnv: Record<string, string>
+): ProviderEnvironmentResult {
+  const model = resolveArkCodingPlanModel(input.model);
+  const arkToken = sourceEnv.ARK_API_KEY?.trim();
+  const fallbackToken = sourceEnv.VOLCENGINE_API_KEY?.trim();
+  const token = arkToken || fallbackToken;
+  const tokenSource = arkToken ? "ARK_API_KEY" : "VOLCENGINE_API_KEY";
+  const redactions = [arkToken, fallbackToken].filter(
+    (value): value is string => Boolean(value)
+  );
+  if (!token) {
+    return {
+      ok: false,
+      provider: "ark_coding_plan",
+      model,
+      env: baseEnv,
+      redactions: [],
+      error:
+        "Ark Coding Plan provider profile requires ARK_API_KEY or VOLCENGINE_API_KEY in the environment."
+    };
+  }
+
+  const baseUrl = resolveArkCodingPlanBaseUrl(
+    sourceEnv.ARK_CODING_PLAN_ANTHROPIC_BASE_URL,
+    sourceEnv.ARK_CODING_PLAN_BASE_URL
+  );
+  if (!baseUrl.ok) {
+    return {
+      ok: false,
+      provider: "ark_coding_plan",
+      model,
+      env: baseEnv,
+      redactions,
+      error: baseUrl.error
+    };
+  }
+
+  return {
+    ok: true,
+    provider: "ark_coding_plan",
+    model,
+    env: {
+      ...omitProviderRouteEnv(baseEnv),
+      ANTHROPIC_BASE_URL: baseUrl.url,
+      ANTHROPIC_AUTH_TOKEN: token,
+      ANTHROPIC_MODEL: model,
+      ANTHROPIC_DEFAULT_OPUS_MODEL: ARK_CODING_PLAN_PRO_MODEL,
+      ANTHROPIC_DEFAULT_SONNET_MODEL: ARK_CODING_PLAN_PRO_MODEL,
+      ANTHROPIC_DEFAULT_HAIKU_MODEL: ARK_CODING_PLAN_PRO_MODEL,
+      ANTHROPIC_SMALL_FAST_MODEL: ARK_CODING_PLAN_PRO_MODEL,
+      CLAUDE_CODE_SUBAGENT_MODEL: ARK_CODING_PLAN_PRO_MODEL,
+      CLAUDE_CODE_EFFORT_LEVEL: input.effort,
+      CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: "1"
+    },
+    redactions,
+    diagnostics: [arkCodingPlanRouteDiagnostic(baseUrl.url, tokenSource)]
   };
 }
 
@@ -217,4 +300,34 @@ function resolveDeepSeekBaseUrl(override: string | undefined): BaseUrlResult {
 function deepSeekRouteDiagnostic(baseUrl: string, tokenSource: string): string {
   const host = new URL(baseUrl).host;
   return `DeepSeek route target: ${host}; token source: ${tokenSource}.`;
+}
+
+function resolveArkCodingPlanBaseUrl(
+  preferredOverride: string | undefined,
+  fallbackOverride: string | undefined
+): BaseUrlResult {
+  const candidate = (preferredOverride?.trim() || fallbackOverride?.trim() || ARK_CODING_PLAN_BASE_URL);
+
+  try {
+    const url = new URL(candidate);
+    if (url.protocol !== "https:" || !url.hostname) {
+      return {
+        ok: false,
+        error:
+          "ARK_CODING_PLAN_ANTHROPIC_BASE_URL must be an https URL with a non-empty host when provided."
+      };
+    }
+    return { ok: true, url: url.toString().replace(/\/$/, "") };
+  } catch {
+    return {
+      ok: false,
+      error:
+        "ARK_CODING_PLAN_ANTHROPIC_BASE_URL must be a valid https URL with a non-empty host when provided."
+    };
+  }
+}
+
+function arkCodingPlanRouteDiagnostic(baseUrl: string, tokenSource: string): string {
+  const host = new URL(baseUrl).host;
+  return `Ark Coding Plan route target: ${host}; token source: ${tokenSource}.`;
 }

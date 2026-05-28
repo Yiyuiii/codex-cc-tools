@@ -28,8 +28,29 @@ describe("release assurance", () => {
     const releaseSmoke = readFileSync(join(root, "scripts", "release-smoke.mjs"), "utf8");
 
     expect(pkg.files).toEqual(
-      expect.arrayContaining(["dist", "AGENTS.md", "README.md", "README.zh-CN.md", "docs", "examples"])
+      expect.arrayContaining([
+        "dist",
+        "AGENTS.md",
+        "README.md",
+        "README.zh-CN.md",
+        "docs/installation.md",
+        "docs/codex-usage.md",
+        "docs/tool-contract.md",
+        "docs/security.md",
+        "docs/delegate-safety.md",
+        "docs/troubleshooting.md",
+        "docs/architecture.md",
+        "docs/prior-art.md",
+        "docs/migration-from-reviewer.md",
+        "examples/AGENTS.md",
+        "examples/codex-global-prompt.md",
+        "examples/codex-synthesis.md",
+        "examples/codex-config.md",
+        "examples/mcp-config.json"
+      ])
     );
+    expect(pkg.files).not.toContain("docs");
+    expect(pkg.files).not.toContain("examples");
     expect(pkg.scripts?.["release:smoke"]).toContain("npm run build");
     expect(pkg.scripts?.["release:smoke"]).toContain("node scripts/release-smoke.mjs");
     expect(exists("scripts/release-smoke.mjs")).toBe(true);
@@ -41,7 +62,16 @@ describe("release assurance", () => {
     expect(releaseSmoke).toContain("readOnlyHint");
     expect(releaseSmoke).toContain("typeof handler");
     expect(releaseSmoke).toContain("examples/codex-config.md");
+    expect(releaseSmoke).toContain("examples/AGENTS.md");
+    expect(releaseSmoke).toContain("examples/codex-global-prompt.md");
+    expect(releaseSmoke).toContain("examples/codex-synthesis.md");
+    expect(releaseSmoke).toContain("docs/codex-usage.md");
     expect(releaseSmoke).toContain("docs/delegate-safety.md");
+    expect(releaseSmoke).toContain("CHANGELOG.md");
+    expect(releaseSmoke).toContain("CHANGELOG.zh-CN.md");
+    expect(releaseSmoke).toContain("SECURITY.md");
+    expect(releaseSmoke).toContain("CONTRIBUTING.md");
+    expect(releaseSmoke).toContain("LICENSE");
   });
 
   it("exposes release verification scripts for CI and tag publishing", () => {
@@ -52,6 +82,7 @@ describe("release assurance", () => {
     expect(pkg.scripts?.["verify:release"]).toContain("npm run release:smoke");
     expect(pkg.scripts?.preflight).toContain("npm ci");
     expect(pkg.scripts?.preflight).toContain("npm run verify:release");
+    expect(pkg.scripts?.prepublishOnly).toBe("npm run verify:release");
   });
 
   it("declares the GitHub repository used by npm trusted publishing", () => {
@@ -80,11 +111,76 @@ describe("release assurance", () => {
       "docs/tool-contract.md",
       "docs/troubleshooting.md",
       "docs/prior-art.md",
+      "docs/codex-usage.md",
       "examples/codex-config.md",
-      "examples/mcp-config.json"
+      "examples/mcp-config.json",
+      "examples/AGENTS.md",
+      "examples/codex-global-prompt.md",
+      "examples/codex-synthesis.md",
+      "CHANGELOG.md",
+      "CHANGELOG.zh-CN.md",
+      "SECURITY.md",
+      "CONTRIBUTING.md",
+      "LICENSE"
     ]) {
       expect(exists(file), `${file} should exist`).toBe(true);
     }
+  });
+
+  it("ships maturity files in the npm package surface", () => {
+    const pkg = readPackageJson();
+
+    expect(pkg.files).toEqual(
+      expect.arrayContaining([
+        "CHANGELOG.md",
+        "CHANGELOG.zh-CN.md",
+        "SECURITY.md",
+        "CONTRIBUTING.md",
+        "LICENSE"
+      ])
+    );
+  });
+
+  it("does not publish internal planning and research artifacts", () => {
+    const pkg = readPackageJson();
+
+    expect(pkg.files).not.toContain("docs/superpowers");
+    expect(pkg.files).not.toContain("docs/research");
+    expect(pkg.files).not.toContain("docs/release");
+  });
+
+  it("documents automated install and uninstall commands", () => {
+    const readme = readFileSync(join(root, "README.md"), "utf8");
+    const readmeZh = readFileSync(join(root, "README.zh-CN.md"), "utf8");
+    const installation = readFileSync(join(root, "docs", "installation.md"), "utf8");
+    const combined = [readme, readmeZh, installation].join("\n");
+
+    expect(combined).toContain("codex-cc-tools install");
+    expect(combined).toContain("codex-cc-tools install --global-binary");
+    expect(combined).toContain("codex-cc-tools uninstall");
+    expect(combined).toContain("--config-path");
+    expect(combined).toContain("--no-enabled-tools");
+    expect(combined).not.toContain("--config ");
+    expect(combined).not.toContain("--include-enabled-tools");
+    expect(combined).not.toContain("--no-include-enabled-tools");
+  });
+
+  it("keeps changelog, security, and license content actionable", () => {
+    const pkg = readPackageJson();
+    const changelog = readFileSync(join(root, "CHANGELOG.md"), "utf8");
+    const changelogZh = readFileSync(join(root, "CHANGELOG.zh-CN.md"), "utf8");
+    const security = readFileSync(join(root, "SECURITY.md"), "utf8");
+    const license = readFileSync(join(root, "LICENSE"), "utf8");
+
+    expect(changelog).toContain(pkg.version);
+    expect(changelog).toMatch(/0\.2\.1-beta\.0/);
+    expect(changelog).toMatch(/0\.2\.0/);
+    expect(changelog).toMatch(/0\.1\.0/);
+    expect(changelogZh).toMatch(/0\.2\.1-beta\.0/);
+    expect(security).toMatch(/GitHub Security Advisory|security advisory|@/i);
+    expect(security).toContain("cc_delegate");
+    expect(license).toContain("MIT License");
+    expect(license).toContain("Copyright (c) 2026 yiyuiii");
   });
 
   it("provides an MCP config example for the dedicated MCP binary", () => {

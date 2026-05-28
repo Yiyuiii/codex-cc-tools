@@ -29,7 +29,9 @@ files or run commands. The tool invokes Claude Code in non-interactive
 `bypassPermissions` mode for autonomous execution. Caller-managed OS,
 container, worktree, repository, and command policy remain outside this tool.
 `delegate` defaults to `providerProfile: "deepseek"`; callers can set
-`providerProfile: "anthropic"` when they want native Claude Code routing.
+`providerProfile: "anthropic"` when they want native Claude Code routing, or
+`providerProfile: "ark_coding_plan"` when they want Volcengine Ark Coding Plan
+routing.
 Callers may launch multiple `delegate` tasks in parallel. Each task starts a
 separate Claude Code subprocess from one complete prompt plus optional process
 settings, then returns its own structured result.

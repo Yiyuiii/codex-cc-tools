@@ -12,6 +12,16 @@ invocation, structured outputs, and explicit authority labels.
 - Shape: configure Claude Code with Anthropic-compatible environment variables such as `ANTHROPIC_BASE_URL` and provider model variables.
 - Difference: `codex-cc-tools` does not ask users to switch global shell profiles for every call. It constructs provider environments per child process.
 
+## Ark Coding Plan Claude Code Integration
+
+- Source checked on 2026-05-28: `https://www.volcengine.com/article/37838`
+- Shape: Ark Coding Plan exposes both an Anthropic-compatible endpoint for
+  Claude Code (`https://ark.cn-beijing.volces.com/api/coding`) and an
+  OpenAI-compatible endpoint for OpenAI-wire clients
+  (`https://ark.cn-beijing.volces.com/api/coding/v3`).
+- Difference: `codex-cc-tools` uses the Anthropic-compatible endpoint because
+  it launches Claude Code and injects `ANTHROPIC_*` variables per child process.
+
 ## Claude Code MCP
 
 - Source: `https://code.claude.com/docs/en/mcp`
