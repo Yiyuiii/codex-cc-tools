@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0-beta.1] - 2026-06-04
+
+- Add `geminiProxyUrl` to `cc_review` and `--gemini-proxy-url` to the CLI for
+  request-level Gemini direct review proxy configuration. This setting wins over
+  inherited `HTTPS_PROXY` / `HTTP_PROXY` and does not affect Claude Code-backed
+  provider profiles.
+
 ## [0.4.0-beta.0] - 2026-06-04
 
 - Add experimental direct `gemini` provider profile for `cc_review`, routing

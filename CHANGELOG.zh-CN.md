@@ -1,5 +1,12 @@
 # 更新日志
 
+## [0.4.0-beta.1] - 2026-06-04
+
+- `cc_review` 新增 `geminiProxyUrl`，CLI 新增 `--gemini-proxy-url`，用于
+  Gemini direct review 的请求级代理配置。该设置优先于继承的
+  `HTTPS_PROXY` / `HTTP_PROXY`，且不影响 Claude Code-backed provider
+  profile。
+
 ## [0.4.0-beta.0] - 2026-06-04
 
 - 新增实验性直接 `gemini` provider profile，用于 `cc_review`，默认把常用别名路由到 `gemini-3.5-flash`。

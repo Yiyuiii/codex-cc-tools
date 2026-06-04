@@ -78,6 +78,9 @@ describe("codex-cc-tools CLI", () => {
     expect(review?.options.find((option) => option.long === "--provider-profile")?.description).toBe(
       "Provider profile: anthropic, deepseek, ark_coding_plan, or gemini."
     );
+    expect(review?.options.find((option) => option.long === "--gemini-proxy-url")?.description).toBe(
+      "HTTP proxy URL for Gemini direct review requests."
+    );
   });
 
   it("parses review command boolean defaults without opting into git or untracked flags", async () => {

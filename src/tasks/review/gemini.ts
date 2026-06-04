@@ -44,6 +44,7 @@ export type GeminiReviewConfig =
 
 export interface ResolveGeminiReviewConfigInput {
   model: string;
+  geminiProxyUrl?: string;
   sourceEnv?: Record<string, string | undefined>;
 }
 
@@ -90,9 +91,13 @@ export function resolveGeminiReviewConfig(
     };
   }
 
-  const proxyUrl = resolveGeminiProxyUrl(
-    sourceEnv.HTTPS_PROXY ?? sourceEnv.https_proxy ?? sourceEnv.HTTP_PROXY ?? sourceEnv.http_proxy
-  );
+  const proxyCandidate =
+    input.geminiProxyUrl ??
+    sourceEnv.HTTPS_PROXY ??
+    sourceEnv.https_proxy ??
+    sourceEnv.HTTP_PROXY ??
+    sourceEnv.http_proxy;
+  const proxyUrl = resolveGeminiProxyUrl(proxyCandidate);
   if (!proxyUrl.ok) {
     return {
       ok: false,
@@ -135,6 +140,7 @@ export async function runGeminiReview(
 
   const config = resolveGeminiReviewConfig({
     model: input.model,
+    geminiProxyUrl: input.geminiProxyUrl,
     sourceEnv: deps.sourceEnv
   });
   if (!config.ok) {

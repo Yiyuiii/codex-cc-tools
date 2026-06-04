@@ -213,10 +213,12 @@ export GOOGLE_GENERATIVE_AI_API_KEY="your-gemini-api-key"
 GEMINI_API_BASE_URL=https://generativelanguage.googleapis.com/v1beta
 ```
 
-Most users should not set the base URL override. The Gemini route inherits
-`HTTPS_PROXY` or `HTTP_PROXY` when present, which is useful in environments
-where direct access to `generativelanguage.googleapis.com` is blocked. API keys
-are sent in the `x-goog-api-key` header rather than the request URL.
+Most users should not set the base URL override. If direct access to
+`generativelanguage.googleapis.com` is blocked, pass `geminiProxyUrl` on the
+`cc_review` request, or `--gemini-proxy-url` in the CLI. That request-level
+proxy setting wins over inherited `HTTPS_PROXY` or `HTTP_PROXY`, which remain
+fallbacks when present. API keys are sent in the `x-goog-api-key` header rather
+than the request URL.
 Gemini direct review does not launch Claude Code, so `effort`, `cacheTtl`, and
 Claude Code `tools` allowlists do not affect Gemini behavior. If `tools` is
 provided, the result includes a diagnostic noting that it was ignored. Direct
@@ -274,7 +276,7 @@ All tools accept:
 }
 ```
 
-Review tasks are `review_plan`, `review_diff`, `review_doc`, and `adversarial_review`. Optional fields include `originalGoal`, `codexSummary`, `acceptanceCriteria`, `knownRisks`, `testsRun`, `permissionMode`, `tools`, `includeUntrackedContent`, and `redactSecrets`. When `tools` is omitted or empty, `cc_review` does not pass Claude Code `--allowedTools`; if `tools` is provided, the entries are forwarded as the explicit Claude Code tool allowlist.
+Review tasks are `review_plan`, `review_diff`, `review_doc`, and `adversarial_review`. Optional fields include `originalGoal`, `codexSummary`, `acceptanceCriteria`, `knownRisks`, `testsRun`, `permissionMode`, `tools`, `geminiProxyUrl`, `includeUntrackedContent`, and `redactSecrets`. When `tools` is omitted or empty, `cc_review` does not pass Claude Code `--allowedTools`; if `tools` is provided, the entries are forwarded as the explicit Claude Code tool allowlist.
 
 `cc_delegate` key fields:
 
@@ -342,10 +344,10 @@ Gemini CLI smoke:
 
 ```bash
 export GEMINI_API_KEY="your-gemini-api-key"
-export HTTPS_PROXY="http://127.0.0.1:10808" # optional
 codex-cc-tools review \
   --provider-profile gemini \
   --model gemini-3.5-flash \
+  --gemini-proxy-url http://127.0.0.1:10808 \
   --task review_doc \
   --context "Gemini route smoke only. Reply with GEMINI_OK."
 ```
@@ -363,6 +365,7 @@ This package is designed for trusted local owner workflows. It does not make Cla
 | `redactSecrets` | `true` for review packet evidence | Best-effort only; avoid sending secrets in prompts, files, and command output. |
 | `permissionMode` for review | `bypassPermissions` | Disables Claude Code's interactive permission prompts. Use the default only in repositories you own; use explicit `tools` or narrower modes for shared or sensitive repos. |
 | `cc_review` tools | unset | No `--allowedTools` flag is passed by default for Claude Code-backed profiles. Explicit `tools` values are forwarded to Claude Code. Gemini direct review ignores Claude Code tool allowlists because it does not launch Claude Code. |
+| `geminiProxyUrl` | unset | Request-level HTTP proxy for direct Gemini review. It wins over inherited `HTTPS_PROXY` / `HTTP_PROXY` and does not affect Claude Code-backed providers. |
 | `cc_delegate` tools | Claude Code non-interactive execution | Takes a complete prompt and runs Claude Code with `bypassPermissions`. Execution-space policy is external. |
 
 For the full provider boundary, see [docs/security.md](docs/security.md). For all schemas, see [docs/tool-contract.md](docs/tool-contract.md).
@@ -383,7 +386,7 @@ Common issues:
 - DeepSeek says credentials are missing: set `DEEPSEEK_API_KEY` or `OPENAI_API_KEY_DEEPSEEK` in the environment that starts Codex or the MCP server.
 - Ark Coding Plan says credentials are missing: set `ARK_API_KEY` or `VOLCENGINE_API_KEY` in the environment that starts Codex or the MCP server.
 - Gemini says credentials are missing: set `GEMINI_API_KEY` in the environment that starts Codex or the MCP server.
-- Gemini direct access times out: set `HTTPS_PROXY` or `HTTP_PROXY` in the environment that starts Codex or the MCP server, then restart Codex.
+- Gemini direct access times out: pass `geminiProxyUrl` in the `cc_review` request or `--gemini-proxy-url` in the CLI. `HTTPS_PROXY` and `HTTP_PROXY` are still inherited as fallbacks when present in the process environment.
 - Setting the key in a terminal is not enough if Codex was launched elsewhere. Restart Codex from an environment that contains the variable, or set a persistent OS-level user variable.
 - DeepSeek dashboard shows no requests: compare the returned diagnostic, for example `DeepSeek route target: api.deepseek.com; token source: OPENAI_API_KEY_DEEPSEEK.`, with the key/account you are monitoring.
 - Anthropic env vars are unset: this is fine for the `anthropic` profile when native Claude Code auth works.

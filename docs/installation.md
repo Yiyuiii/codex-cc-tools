@@ -48,10 +48,12 @@ export GOOGLE_API_KEY="your-gemini-api-key"
 export GOOGLE_GENERATIVE_AI_API_KEY="your-gemini-api-key"
 ```
 
-It defaults to `https://generativelanguage.googleapis.com/v1beta` and inherits
-`HTTPS_PROXY` or `HTTP_PROXY` when present. `cc_delegate` rejects
-`providerProfile: "gemini"` because the Gemini API does not expose Claude Code
-filesystem, shell, or edit tools.
+It defaults to `https://generativelanguage.googleapis.com/v1beta`. If direct
+network access is blocked, pass `geminiProxyUrl` in the `cc_review` request or
+`--gemini-proxy-url` in the CLI; inherited `HTTPS_PROXY` and `HTTP_PROXY`
+remain lower-priority fallbacks. `cc_delegate` rejects `providerProfile:
+"gemini"` because the Gemini API does not expose Claude Code filesystem, shell,
+or edit tools.
 
 ## Global Install
 
@@ -171,10 +173,10 @@ Gemini smoke:
 
 ```bash
 export GEMINI_API_KEY="your-gemini-api-key"
-export HTTPS_PROXY="http://127.0.0.1:10808" # optional
 codex-cc-tools review \
   --provider-profile gemini \
   --model gemini-3.5-flash \
+  --gemini-proxy-url http://127.0.0.1:10808 \
   --task review_doc \
   --context "Gemini route smoke only. Reply with GEMINI_OK."
 ```
@@ -211,7 +213,8 @@ provider-token route variables first.
 `gemini` is configured per direct review request from `GEMINI_API_KEY`,
 `GOOGLE_API_KEY`, or `GOOGLE_GENERATIVE_AI_API_KEY`. It calls Gemini
 `generateContent` directly with `gemini-3.5-flash` as the common alias target,
-uses `x-goog-api-key` instead of putting the key in the URL, and can inherit
-`HTTPS_PROXY` or `HTTP_PROXY` for transport.
+uses `x-goog-api-key` instead of putting the key in the URL, and can use the
+request-level `geminiProxyUrl` transport proxy before falling back to inherited
+`HTTPS_PROXY` or `HTTP_PROXY`.
 
 See [security.md](security.md) for provider environment and redaction boundaries.

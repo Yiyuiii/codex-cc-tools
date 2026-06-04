@@ -23,7 +23,10 @@ are forwarded as the explicit Claude Code tool allowlist.
 `generateContent`, ignores Claude Code tool allowlists because no Claude Code
 subprocess is launched, and maps common aliases to `gemini-3.5-flash`.
 Claude Code-specific `effort` and `cacheTtl` settings are accepted by the shared
-schema but do not affect direct Gemini review behavior.
+schema but do not affect direct Gemini review behavior. `geminiProxyUrl` is an
+optional request-level HTTP proxy for this direct Gemini route; it wins over
+inherited `HTTPS_PROXY` and `HTTP_PROXY` and does not affect Claude Code-backed
+provider profiles.
 
 ## Delegate
 

@@ -49,6 +49,35 @@ describe("Gemini direct review", () => {
     expect(config.ok && config.redactions).toEqual(["gemini-token", "fallback-token"]);
   });
 
+  it("lets an explicit Gemini proxy URL override proxy environment variables", () => {
+    const config = resolveGeminiReviewConfig({
+      model: "opus",
+      geminiProxyUrl: " http://127.0.0.1:10808 ",
+      sourceEnv: {
+        GEMINI_API_KEY: "gemini-token",
+        HTTPS_PROXY: "http://wrong.example:8080"
+      }
+    });
+
+    expect(config).toMatchObject({
+      ok: true,
+      model: "gemini-3.5-flash",
+      proxyUrl: "http://127.0.0.1:10808"
+    });
+
+    expect(
+      resolveGeminiReviewConfig({
+        model: "opus",
+        geminiProxyUrl: "ftp://127.0.0.1:10808",
+        sourceEnv: { GEMINI_API_KEY: "gemini-token" }
+      })
+    ).toMatchObject({
+      ok: false,
+      redactions: ["gemini-token"],
+      error: expect.stringContaining("HTTP proxy")
+    });
+  });
+
   it("rejects missing Gemini keys and invalid Gemini base/proxy URLs", () => {
     expect(resolveGeminiReviewConfig({ model: "opus", sourceEnv: {} })).toMatchObject({
       ok: false,

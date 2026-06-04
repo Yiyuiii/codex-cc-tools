@@ -21,6 +21,7 @@ export interface LocalReviewOptions {
   output?: string;
   permissionMode?: string;
   tools?: string;
+  geminiProxyUrl?: string;
   cwd?: string;
   includeGitDiff?: boolean;
   includeGitStatus?: boolean;

@@ -218,7 +218,7 @@ Claude Code 的输出是建议性证据，Codex 必须明确说明采纳、拒�
 }
 ```
 
-`task` 可选 `review_plan`、`review_diff`、`review_doc`、`adversarial_review`。常用可选字段包括 `originalGoal`、`codexSummary`、`acceptanceCriteria`、`knownRisks`、`testsRun`、`permissionMode`、`tools`、`includeUntrackedContent`、`redactSecrets`。
+`task` 可选 `review_plan`、`review_diff`、`review_doc`、`adversarial_review`。常用可选字段包括 `originalGoal`、`codexSummary`、`acceptanceCriteria`、`knownRisks`、`testsRun`、`permissionMode`、`tools`、`geminiProxyUrl`、`includeUntrackedContent`、`redactSecrets`。
 
 `cc_delegate` 示例：
 
@@ -277,10 +277,10 @@ Gemini CLI 冒烟：
 
 ```bash
 export GEMINI_API_KEY="your-gemini-api-key"
-export HTTPS_PROXY="http://127.0.0.1:10808" # 可选
 codex-cc-tools review \
   --provider-profile gemini \
   --model gemini-3.5-flash \
+  --gemini-proxy-url http://127.0.0.1:10808 \
   --task review_doc \
   --context "Gemini route smoke only. Reply with GEMINI_OK."
 ```
@@ -297,6 +297,7 @@ codex-cc-tools review \
 | `cacheTtl` | `1h` | 给 Claude Code prompt cache 的提示；cache 和 cost 字段以 Claude Code/provider 报告为准。 |
 | `redactSecrets` | review 证据默认 `true` | 只是尽力脱敏；不要把秘密放进 prompt、文件或命令输出。 |
 | review 的 `permissionMode` | `bypassPermissions` | 会跳过 Claude Code 的交互式权限提示。只建议在自己控制的仓库中使用默认值；共享或敏感仓库应收窄工具和权限。 |
+| `geminiProxyUrl` | 未设置 | Gemini direct review 的请求级 HTTP 代理。优先于继承的 `HTTPS_PROXY` / `HTTP_PROXY`，不影响 Claude Code-backed provider。 |
 | `cc_delegate` 工具 | Claude Code 非交互执行 | 接收完整 prompt，并以 `bypassPermissions` 运行 Claude Code；执行空间策略属于外部。 |
 
 完整 provider 边界见 [docs/security.md](docs/security.md)。完整 schema 见 [docs/tool-contract.md](docs/tool-contract.md)。
@@ -314,6 +315,7 @@ codex-cc-tools doctor
 - Codex 看不到工具：修改 MCP 配置后重启 Codex。
 - DeepSeek 提示缺少凭据：在启动 Codex 或 MCP server 的环境里设置 `DEEPSEEK_API_KEY` 或 `OPENAI_API_KEY_DEEPSEEK`。
 - Ark Coding Plan 提示缺少凭据：在启动 Codex 或 MCP server 的环境里设置 `ARK_API_KEY` 或 `VOLCENGINE_API_KEY`。
+- Gemini 直连超时：在 `cc_review` 请求里传 `geminiProxyUrl`，或在 CLI 使用 `--gemini-proxy-url`。`HTTPS_PROXY` / `HTTP_PROXY` 仍会作为进程环境后备。
 - 只在某个终端里设置 key 不够，除非 Codex/MCP server 也是从这个终端启动的。请从包含该变量的环境重启 Codex，或设置 OS 级持久用户变量。
 - DeepSeek 控制台没有请求：对照返回诊断里的 token source，例如 `DeepSeek route target: api.deepseek.com; token source: OPENAI_API_KEY_DEEPSEEK.`，确认监控的是同一个 key/账号。
 - `ANTHROPIC_AUTH_TOKEN` / `ANTHROPIC_API_KEY` 为空：`anthropic` profile 下这不是错误，只要原生 Claude Code auth 可用即可。
@@ -353,9 +355,11 @@ Claude Code，而是直接调用 Google Gemini `generateContent`，常用别名
 
 使用前在启动 Codex 或 MCP server 的环境中设置 `GEMINI_API_KEY`；
 也支持 `GOOGLE_API_KEY` 和 `GOOGLE_GENERATIVE_AI_API_KEY` 作为后备。
-如果直连 `generativelanguage.googleapis.com` 不通，可以设置
-`HTTPS_PROXY` 或 `HTTP_PROXY`，然后重启 Codex。Gemini API key 会通过
-`x-goog-api-key` header 发送，不会放进 URL。
+如果直连 `generativelanguage.googleapis.com` 不通，可以在 `cc_review`
+请求里传 `geminiProxyUrl`，或在 CLI 使用 `--gemini-proxy-url`。这个
+请求级代理设置优先于继承到进程里的 `HTTPS_PROXY` 或 `HTTP_PROXY`；
+环境变量仍作为后备。Gemini API key 会通过 `x-goog-api-key` header
+发送，不会放进 URL。
 Gemini 直接 review 不会启动 Claude Code，因此 `effort`、`cacheTtl`
 和 Claude Code `tools` allowlist 不会影响 Gemini 行为。如果显式传入
 `tools`，结果会包含一条诊断说明它已被忽略。Gemini 直连 HTTP 请求

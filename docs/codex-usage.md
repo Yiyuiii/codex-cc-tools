@@ -19,7 +19,8 @@ provider modify your working tree. Review tasks are read-only by contract.
 
 **Default provider**: `anthropic` (native Claude Code). `providerProfile:
 "gemini"` is also available for direct Gemini review, but it does not provide
-Claude Code file-reading or shell tools.
+Claude Code file-reading or shell tools. When Gemini needs a local network
+proxy, pass `geminiProxyUrl` directly in the `cc_review` request.
 
 **Key pattern**: Run `cc_review` at decision checkpoints — before implementing,
 before finalizing a diff, and after major documentation changes. Treat its

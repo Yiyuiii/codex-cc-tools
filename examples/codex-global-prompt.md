@@ -56,7 +56,8 @@ directly in the `prompt` field — there are no separate `context` or
 - Use `ark_coding_plan` explicitly when the task should route through
   Volcengine Ark Coding Plan.
 - Use `gemini` explicitly only for `cc_review`; it is direct review-only and
-  is rejected by `cc_delegate`.
+  is rejected by `cc_delegate`. If Gemini direct access needs a local proxy,
+  pass `geminiProxyUrl` on that `cc_review` request.
 - You may override either default with an explicit `providerProfile`.
 
 ## Parallelism

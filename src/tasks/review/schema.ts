@@ -94,6 +94,7 @@ export const CcReviewInputObjectSchema = z
     output: ReviewOutputModeSchema.default("markdown"),
     permissionMode: ClaudePermissionModeSchema.default("bypassPermissions"),
     tools: ToolsSchema,
+    geminiProxyUrl: NonEmptyStringSchema.optional(),
     cwd: z.string().trim().min(1).optional(),
     includeGitDiff: z.boolean().default(false),
     includeGitStatus: z.boolean().default(false),

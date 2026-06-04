@@ -20,6 +20,7 @@ describe("registerCcReviewTool", () => {
 
     expect(observed.name).toBe("cc_review");
     expect(observed.config?.inputSchema).toHaveProperty("providerProfile");
+    expect(observed.config?.inputSchema).toHaveProperty("geminiProxyUrl");
     expect(observed.config?.annotations).toMatchObject({
       readOnlyHint: true,
       destructiveHint: false

@@ -14,6 +14,7 @@ describe("runLocalReview", () => {
         context: "Review my staged change.",
         tools: "Read, Bash(git diff *)",
         providerProfile: "deepseek",
+        geminiProxyUrl: "http://127.0.0.1:10808",
         includeGitDiff: true,
         includeUntrackedContent: false,
         autoDiscoverGit: false,
@@ -33,6 +34,7 @@ describe("runLocalReview", () => {
     expect(observed?.task).toBe("review_diff");
     expect(observed?.tools).toEqual(["Read", "Bash(git diff *)"]);
     expect(observed?.providerProfile).toBe("deepseek");
+    expect(observed?.geminiProxyUrl).toBe("http://127.0.0.1:10808");
     expect(observed?.includeGitDiff).toBe(true);
     expect(observed?.includeUntrackedContent).toBe(false);
     expect(observed?.autoDiscoverGit).toBe(false);

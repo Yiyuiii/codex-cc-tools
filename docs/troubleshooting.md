@@ -67,10 +67,12 @@ header and is redacted from returned output. If multiple variables are present,
 
 ## Gemini Direct Access Times Out
 
-Set `HTTPS_PROXY` or `HTTP_PROXY` in the environment that starts Codex or the
-MCP server, then restart Codex. Successful direct Gemini reviews include a
-non-secret route diagnostic showing the Gemini host, token source variable, and
-proxy host when a proxy is used.
+Pass `geminiProxyUrl` in the `cc_review` request, or use
+`--gemini-proxy-url` in the CLI. This is useful when Codex was launched from an
+environment that does not contain `HTTPS_PROXY`. Inherited `HTTPS_PROXY` and
+`HTTP_PROXY` still work as lower-priority fallbacks when present. Successful
+direct Gemini reviews include a non-secret route diagnostic showing the Gemini
+host, token source variable, and proxy host when a proxy is used.
 
 ## Ark Coding Plan Uses The Wrong Endpoint
 

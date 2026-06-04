@@ -116,6 +116,7 @@ export function createProgram(deps: CreateProgramDeps = {}): Command {
     .option("--output <mode>", "Review output mode.")
     .option("--permission-mode <mode>", "Claude Code permission mode.")
     .option("--tools <tools>", "Comma-separated Claude Code tools.")
+    .option("--gemini-proxy-url <url>", "HTTP proxy URL for Gemini direct review requests.")
     .option("--cwd <path>", "Working directory for Claude Code.")
     .option("--include-git-diff", "Include git diff evidence.")
     .option("--include-git-status", "Include git status evidence.")

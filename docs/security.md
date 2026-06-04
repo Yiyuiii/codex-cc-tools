@@ -91,8 +91,9 @@ The `gemini` provider profile is a direct `cc_review` backend:
   `gemini-3.5-flash`. A `models/` prefix is stripped from direct Gemini model
   names.
 - The API key is sent in the `x-goog-api-key` header, not in the request URL.
-- The request inherits `HTTPS_PROXY` or `HTTP_PROXY` when present. A proxy can
-  observe transport metadata.
+- The request can use explicit `geminiProxyUrl` first, then falls back to
+  inherited `HTTPS_PROXY` or `HTTP_PROXY` when present. A proxy can observe
+  transport metadata.
 - `cc_delegate` rejects `providerProfile: "gemini"` because Gemini
   `generateContent` does not expose Claude Code filesystem, shell, or edit
   tools.

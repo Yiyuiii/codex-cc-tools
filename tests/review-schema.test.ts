@@ -51,6 +51,15 @@ describe("CcReviewInputSchema", () => {
       }).providerProfile
     ).toBe("gemini");
 
+    expect(
+      CcReviewInputSchema.parse({
+        task: "review_doc",
+        context: "Review this document.",
+        providerProfile: "gemini",
+        geminiProxyUrl: " http://127.0.0.1:10808 "
+      }).geminiProxyUrl
+    ).toBe("http://127.0.0.1:10808");
+
     expect(() =>
       CcReviewInputSchema.parse({
         task: "review_plan",
