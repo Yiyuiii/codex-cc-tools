@@ -10,7 +10,7 @@ When communicating with the maintainer, use Chinese for explanations, progress r
 
 `codex-cc-tools` is a larger tool family, not a rename of `codex-cc-reviewer`.
 
-- Provider profiles describe which backend drives Claude Code: `anthropic`, `deepseek`, `ark_coding_plan`, and future compatible providers.
+- Provider profiles describe which backend drives a task: Claude Code-backed profiles (`anthropic`, `deepseek`, `ark_coding_plan`) or direct review-only profiles such as `gemini`.
 - Tasks describe what Codex asks Claude Code to do: `review` and `delegate`.
 - Execution policy describes MCP metadata only: `review` is read-only; `delegate` is destructive because it asks Claude Code to work. Execution-space policy is outside this MCP tool.
 
@@ -26,7 +26,7 @@ Do not silently change that repository while working here.
 
 - `docs/architecture.md` is the main architecture reference.
 - `docs/migration-from-reviewer.md` records how this repository should reuse or migrate the reviewer code.
-- `docs/security.md` records provider environment inheritance, DeepSeek / Ark Coding Plan child-process routing, and provider-token redaction boundaries.
+- `docs/security.md` records provider environment inheritance, DeepSeek / Ark Coding Plan child-process routing, Gemini direct review routing, and provider-token redaction boundaries.
 - `docs/delegate-safety.md` records the active `delegate` boundary. The filename is historical; the current contract is a thin Claude Code bridge, not execution-space management.
 - `docs/research/delegate-writable-smoke.md` records historical writable `delegate` smoke runs from the superseded safety-heavy CLI.
 - `docs/research/deepseek-claude-code-env.md` records the latest checked DeepSeek Claude Code environment matrix.
@@ -65,6 +65,7 @@ Use TDD for behavior-bearing code. Keep early phases small: first establish the 
 - 2026-05-28 provider update: `ark_coding_plan` is implemented as an explicit experimental provider profile. It reads `ARK_API_KEY` first, then `VOLCENGINE_API_KEY`, injects the Ark Coding Plan Anthropic-compatible Claude Code endpoint `https://ark.cn-beijing.volces.com/api/coding`, maps `opus` / `sonnet` / `haiku` and `Doubao-Seed-2.0-pro` to `doubao-seed-2.0-pro`, and leaves `cc_delegate` defaulting to `deepseek`. The OpenAI-compatible endpoint `https://ark.cn-beijing.volces.com/api/coding/v3` is documented as not being the default for this Claude Code route.
 - 2026-05-29 review tool policy update: `cc_review` no longer injects `tools: ["default"]` for any provider profile. When `tools` is omitted or empty, the Claude Code subprocess receives no `--allowedTools` flag; explicit `tools` values are still forwarded as the caller-specified allowlist.
 - 2026-05-29 Anthropic Opus update: local smoke showed Claude Code `--model opus --effort max` still resolved to `claude-opus-4-7`, while explicit `--model claude-opus-4-8 --effort max` succeeded. The `anthropic` provider profile now resolves `model: "opus"` to `claude-opus-4-8`; other Anthropic model names pass through.
+- 2026-06-04 Gemini provider update: `gemini` is implemented as an explicit experimental direct `cc_review` provider profile. It reads `GEMINI_API_KEY` first, then `GOOGLE_API_KEY`, then `GOOGLE_GENERATIVE_AI_API_KEY`; calls Google Gemini `generateContent` at `https://generativelanguage.googleapis.com/v1beta`; maps `opus` / `sonnet` / `haiku` and `models/gemini-3.5-flash` to `gemini-3.5-flash`; inherits `HTTPS_PROXY` / `HTTP_PROXY` for transport; sends the key through `x-goog-api-key`; and rejects `cc_delegate` because Gemini direct API does not expose Claude Code filesystem, shell, or edit tools.
 
 Standard local checks:
 

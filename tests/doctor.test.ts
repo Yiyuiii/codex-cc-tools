@@ -7,6 +7,7 @@ import {
   codexCliResult,
   daemonRosterResult,
   deepSeekEnvResult,
+  geminiEnvResult,
   mcpRegistrationResult,
   parseClaudeVersion,
   registryResults,
@@ -143,12 +144,29 @@ describe("doctor diagnostics", () => {
     expect(mismatch.detail).toContain("ARK_API_KEY wins");
   });
 
+  it("reports Gemini env readiness and key precedence", () => {
+    expect(geminiEnvResult({}).level).toBe("warn");
+    expect(geminiEnvResult({ GEMINI_API_KEY: "same" })).toMatchObject({
+      level: "ok",
+      detail: expect.stringContaining("GEMINI_API_KEY is set")
+    });
+
+    const mismatch = geminiEnvResult({
+      GEMINI_API_KEY: "one",
+      GOOGLE_API_KEY: "two",
+      GOOGLE_GENERATIVE_AI_API_KEY: "three"
+    });
+
+    expect(mismatch.level).toBe("warn");
+    expect(mismatch.detail).toContain("GEMINI_API_KEY wins");
+  });
+
   it("lists task, provider, and MCP tool names", () => {
     const results = registryResults();
     const details = results.map((result) => result.detail).join("\n");
 
     expect(details).toContain("review, delegate");
-    expect(details).toContain("anthropic, deepseek, ark_coding_plan");
+    expect(details).toContain("anthropic, deepseek, ark_coding_plan, gemini");
     expect(details).toContain("cc_review, cc_delegate");
   });
 });

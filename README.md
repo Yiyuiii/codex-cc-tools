@@ -13,7 +13,7 @@ Claude Code task tools for Codex via MCP.
 
 `codex-cc-tools` is the successor-style tool family to the narrower `codex-cc-reviewer` package. It keeps the same Codex-facing architecture, but keeps the public surface intentionally small:
 
-- provider profile: which Claude Code backend to use: `anthropic`, `deepseek`, or `ark_coding_plan`
+- provider profile: which backend to use: Claude Code-backed `anthropic`, `deepseek`, `ark_coding_plan`, or direct review-only `gemini`
 - task: what Codex is asking for, currently `review` or `delegate`
 - authority: read-only review or potentially destructive delegated Claude Code execution
 - result contract: structured output that Codex can inspect, synthesize, accept, reject, or defer
@@ -27,6 +27,7 @@ Requirements:
 - Claude Code CLI on `PATH`; `claude --version` should work
 - A DeepSeek API key if you use `cc_delegate` without overriding `providerProfile`
 - An Ark Coding Plan API key if you explicitly use `providerProfile: "ark_coding_plan"`
+- A Gemini API key if you explicitly use `providerProfile: "gemini"` for `cc_review`
 - Claude Code authenticated locally if you use the native `anthropic` provider profile
 - Codex or another MCP client that can launch a stdio MCP server
 
@@ -193,6 +194,45 @@ Ark Coding Plan model inputs accepted by this package:
 | `doubao-seed-2.0-pro` | `doubao-seed-2.0-pro` |
 | any other non-empty string | passed through as a direct Ark model name |
 
+For Gemini, `cc_review` calls Google Gemini `generateContent` directly. It does
+not launch Claude Code and is not supported by `cc_delegate`.
+
+The MCP server process must start with one of these environment variables:
+
+```bash
+export GEMINI_API_KEY="your-gemini-api-key"
+# or
+export GOOGLE_API_KEY="your-gemini-api-key"
+# or
+export GOOGLE_GENERATIVE_AI_API_KEY="your-gemini-api-key"
+```
+
+`GEMINI_API_KEY` wins when multiple variables are present. Optional override:
+
+```bash
+GEMINI_API_BASE_URL=https://generativelanguage.googleapis.com/v1beta
+```
+
+Most users should not set the base URL override. The Gemini route inherits
+`HTTPS_PROXY` or `HTTP_PROXY` when present, which is useful in environments
+where direct access to `generativelanguage.googleapis.com` is blocked. API keys
+are sent in the `x-goog-api-key` header rather than the request URL.
+Gemini direct review does not launch Claude Code, so `effort`, `cacheTtl`, and
+Claude Code `tools` allowlists do not affect Gemini behavior. If `tools` is
+provided, the result includes a diagnostic noting that it was ignored. Direct
+Gemini HTTP requests have a 60 second request timeout.
+
+Gemini model inputs accepted by this package:
+
+| Input model | Gemini model used |
+| --- | --- |
+| `opus` | `gemini-3.5-flash` |
+| `sonnet` | `gemini-3.5-flash` |
+| `haiku` | `gemini-3.5-flash` |
+| `gemini-3.5-flash` | `gemini-3.5-flash` |
+| `models/gemini-3.5-flash` | `gemini-3.5-flash` |
+| any other non-empty string | passed through as a direct Gemini model name |
+
 ## Tools
 
 | MCP tool | CLI command | Authority | Use it for |
@@ -213,7 +253,7 @@ Treat Claude Code output as advisory evidence; Codex must accept, reject, or def
 
 All tools accept:
 
-- `providerProfile`: `cc_review` defaults to `anthropic`; `cc_delegate` defaults to `deepseek`; explicit values can be `anthropic`, `deepseek`, or `ark_coding_plan`
+- `providerProfile`: `cc_review` defaults to `anthropic`; `cc_delegate` defaults to `deepseek`; explicit values can be `anthropic`, `deepseek`, `ark_coding_plan`, or review-only `gemini`
 - `model`: `opus` by default; provider aliases are resolved per profile. In the native Anthropic profile, `opus` resolves to `claude-opus-4-8`.
 - `effort`: `max` by default; one of `low`, `medium`, `high`, `max`
 - `cwd`: task working directory where applicable
@@ -298,19 +338,31 @@ codex-cc-tools review \
   --context "Ark Coding Plan route smoke only. Report whether this review invocation works."
 ```
 
+Gemini CLI smoke:
+
+```bash
+export GEMINI_API_KEY="your-gemini-api-key"
+export HTTPS_PROXY="http://127.0.0.1:10808" # optional
+codex-cc-tools review \
+  --provider-profile gemini \
+  --model gemini-3.5-flash \
+  --task review_doc \
+  --context "Gemini route smoke only. Reply with GEMINI_OK."
+```
+
 ## Safety And Configuration
 
 This package is designed for trusted local owner workflows. It does not make Claude Code safe for untrusted repositories by itself.
 
 | Setting | Default | Notes |
 | --- | --- | --- |
-| `providerProfile` | `cc_review`: `anthropic`; `cc_delegate`: `deepseek` | `anthropic` uses native Claude Code profile/auth. `deepseek` requires `DEEPSEEK_API_KEY` or `OPENAI_API_KEY_DEEPSEEK`; `ark_coding_plan` requires `ARK_API_KEY` or `VOLCENGINE_API_KEY`. |
-| `model` | `opus` | In Anthropic profile, `opus` maps to `claude-opus-4-8`. In DeepSeek profile, `opus` and `sonnet` map to `deepseek-v4-pro[1m]`; `haiku` maps to `deepseek-v4-flash`. In Ark Coding Plan, common aliases map to `doubao-seed-2.0-pro`; direct model names pass through. |
+| `providerProfile` | `cc_review`: `anthropic`; `cc_delegate`: `deepseek` | `anthropic` uses native Claude Code profile/auth. `deepseek` requires `DEEPSEEK_API_KEY` or `OPENAI_API_KEY_DEEPSEEK`; `ark_coding_plan` requires `ARK_API_KEY` or `VOLCENGINE_API_KEY`; review-only `gemini` requires `GEMINI_API_KEY` or a Google fallback key. |
+| `model` | `opus` | In Anthropic profile, `opus` maps to `claude-opus-4-8`. In DeepSeek profile, `opus` and `sonnet` map to `deepseek-v4-pro[1m]`; `haiku` maps to `deepseek-v4-flash`. In Ark Coding Plan, common aliases map to `doubao-seed-2.0-pro`. In Gemini, common aliases map to `gemini-3.5-flash`. |
 | `effort` | `max` | Higher effort is slower and may cost more. On metered providers, use `medium` or `low` for routine checks. |
 | `cacheTtl` | `1h` | Adds Claude Code prompt-cache hint where supported; reported cache fields are provider/Claude Code estimates. |
 | `redactSecrets` | `true` for review packet evidence | Best-effort only; avoid sending secrets in prompts, files, and command output. |
 | `permissionMode` for review | `bypassPermissions` | Disables Claude Code's interactive permission prompts. Use the default only in repositories you own; use explicit `tools` or narrower modes for shared or sensitive repos. |
-| `cc_review` tools | unset | No `--allowedTools` flag is passed by default for any provider profile. Explicit `tools` values are forwarded to Claude Code. |
+| `cc_review` tools | unset | No `--allowedTools` flag is passed by default for Claude Code-backed profiles. Explicit `tools` values are forwarded to Claude Code. Gemini direct review ignores Claude Code tool allowlists because it does not launch Claude Code. |
 | `cc_delegate` tools | Claude Code non-interactive execution | Takes a complete prompt and runs Claude Code with `bypassPermissions`. Execution-space policy is external. |
 
 For the full provider boundary, see [docs/security.md](docs/security.md). For all schemas, see [docs/tool-contract.md](docs/tool-contract.md).
@@ -330,6 +382,8 @@ Common issues:
 - Codex does not show the tools: restart Codex after changing MCP config.
 - DeepSeek says credentials are missing: set `DEEPSEEK_API_KEY` or `OPENAI_API_KEY_DEEPSEEK` in the environment that starts Codex or the MCP server.
 - Ark Coding Plan says credentials are missing: set `ARK_API_KEY` or `VOLCENGINE_API_KEY` in the environment that starts Codex or the MCP server.
+- Gemini says credentials are missing: set `GEMINI_API_KEY` in the environment that starts Codex or the MCP server.
+- Gemini direct access times out: set `HTTPS_PROXY` or `HTTP_PROXY` in the environment that starts Codex or the MCP server, then restart Codex.
 - Setting the key in a terminal is not enough if Codex was launched elsewhere. Restart Codex from an environment that contains the variable, or set a persistent OS-level user variable.
 - DeepSeek dashboard shows no requests: compare the returned diagnostic, for example `DeepSeek route target: api.deepseek.com; token source: OPENAI_API_KEY_DEEPSEEK.`, with the key/account you are monitoring.
 - Anthropic env vars are unset: this is fine for the `anthropic` profile when native Claude Code auth works.
@@ -348,7 +402,7 @@ See [docs/troubleshooting.md](docs/troubleshooting.md).
 - `cc_review`: second-opinion review
 - `cc_delegate`: prompt-driven Claude Code execution, read-only or writable by prompt scope
 
-Provider routing is orthogonal to the task. DeepSeek and Ark Coding Plan are not separate tasks; they are selected with `providerProfile`.
+Provider routing is orthogonal to the task. DeepSeek, Ark Coding Plan, and Gemini are not separate tasks; they are selected with `providerProfile`. Gemini is currently review-only.
 
 ## Documentation
 

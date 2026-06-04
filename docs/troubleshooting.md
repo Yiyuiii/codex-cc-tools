@@ -50,6 +50,28 @@ The Ark key is injected only into the Claude Code child process and is redacted
 from returned output. If both variables are present with different values,
 `ARK_API_KEY` wins.
 
+## Gemini Provider Fails Configuration
+
+Set one of:
+
+```bash
+GEMINI_API_KEY=...
+GOOGLE_API_KEY=...
+GOOGLE_GENERATIVE_AI_API_KEY=...
+```
+
+The Gemini key is sent directly to `generateContent` in the `x-goog-api-key`
+header and is redacted from returned output. If multiple variables are present,
+`GEMINI_API_KEY` wins, then `GOOGLE_API_KEY`, then
+`GOOGLE_GENERATIVE_AI_API_KEY`.
+
+## Gemini Direct Access Times Out
+
+Set `HTTPS_PROXY` or `HTTP_PROXY` in the environment that starts Codex or the
+MCP server, then restart Codex. Successful direct Gemini reviews include a
+non-secret route diagnostic showing the Gemini host, token source variable, and
+proxy host when a proxy is used.
+
 ## Ark Coding Plan Uses The Wrong Endpoint
 
 `ark_coding_plan` is a Claude Code provider profile, so it defaults to the
@@ -99,7 +121,8 @@ codex-cc-tools doctor
 
 `doctor` checks Node, npm, Codex CLI, Claude Code CLI, daemon state,
 background jobs, Codex config file presence, MCP registration status,
-registered tasks and providers, and DeepSeek / Ark Coding Plan environment variables.
+registered tasks and providers, and DeepSeek / Ark Coding Plan / Gemini
+environment variables.
 
 If `codex-cc-tools install` does not write the config block to the expected
 path:
@@ -158,3 +181,11 @@ only if you use `cc_delegate` with its default `deepseek` profile.
 
 This is a warning, not an error. Set `ARK_API_KEY` or `VOLCENGINE_API_KEY` only
 if you use `providerProfile: "ark_coding_plan"`.
+
+## Doctor Reports Missing Gemini Key
+
+`[warn] Gemini environment: no Gemini key found`
+
+This is a warning, not an error. Set `GEMINI_API_KEY`,
+`GOOGLE_API_KEY`, or `GOOGLE_GENERATIVE_AI_API_KEY` only if you use
+`cc_review` with `providerProfile: "gemini"`.

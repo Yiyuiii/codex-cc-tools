@@ -142,6 +142,25 @@ describe("runClaudeDelegate", () => {
     expect(result.diagnostics.join("\n")).not.toContain("cache and cost fields");
   });
 
+  it("rejects Gemini delegation because Gemini is direct review only", async () => {
+    const result = await runClaudeDelegate(
+      { ...baseInput, providerProfile: "gemini" },
+      {
+        sourceEnv: { GEMINI_API_KEY: "gemini-token" },
+        execute: async () => {
+          throw new Error("execute should not be called");
+        },
+        now: fakeClock([1, 2])
+      }
+    );
+
+    expect(result.ok).toBe(false);
+    expect(result.status).toBe("failed");
+    expect(result.summary).toContain("cc_review");
+    expect(result.command).toEqual(["gemini"]);
+    expect(JSON.stringify(result)).not.toContain("gemini-token");
+  });
+
   it("returns cancelled without starting Claude Code when the signal is already aborted", async () => {
     const controller = new AbortController();
     controller.abort();

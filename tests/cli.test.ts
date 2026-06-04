@@ -22,9 +22,9 @@ describe("codex-cc-tools CLI", () => {
 
     expect(result.stdout).toContain("codex-cc-tools doctor");
     expect(result.stdout).toContain("Tasks: review, delegate");
-    expect(result.stdout).toContain("Providers: anthropic, deepseek, ark_coding_plan");
+    expect(result.stdout).toContain("Providers: anthropic, deepseek, ark_coding_plan, gemini");
     expect(result.stdout).toContain("MCP tool names: cc_review, cc_delegate");
-  });
+  }, 15_000);
 
   it("parses doctor config path and strict options", async () => {
     let observedOptions: Record<string, unknown> | undefined;
@@ -73,10 +73,10 @@ describe("codex-cc-tools CLI", () => {
     const review = program.commands.find((command) => command.name() === "review");
 
     expect(delegate?.options.find((option) => option.long === "--provider-profile")?.description).toBe(
-      "Provider profile: deepseek by default; also supports anthropic or ark_coding_plan."
+      "Provider profile: deepseek by default; also supports anthropic or ark_coding_plan. Gemini is review-only."
     );
     expect(review?.options.find((option) => option.long === "--provider-profile")?.description).toBe(
-      "Provider profile: anthropic, deepseek, or ark_coding_plan."
+      "Provider profile: anthropic, deepseek, ark_coding_plan, or gemini."
     );
   });
 

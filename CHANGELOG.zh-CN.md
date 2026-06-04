@@ -1,5 +1,12 @@
 # 更新日志
 
+## [0.4.0-beta.0] - 2026-06-04
+
+- 新增实验性直接 `gemini` provider profile，用于 `cc_review`，默认把常用别名路由到 `gemini-3.5-flash`。
+- Gemini 凭据读取顺序为 `GEMINI_API_KEY`、`GOOGLE_API_KEY`、`GOOGLE_GENERATIVE_AI_API_KEY`；请求使用 `x-goog-api-key` header，并对返回结果做 provider token 脱敏。
+- Gemini 直接 review 请求支持继承 `HTTPS_PROXY` / `HTTP_PROXY`。
+- `cc_delegate` 会拒绝 `providerProfile: "gemini"`，因为 Gemini 直接 API 不提供 Claude Code 的文件系统、shell 或编辑工具能力。
+
 ## [0.3.0-beta.2] - 2026-05-29
 
 - 所有 `cc_review` provider profile 都不再注入默认 `tools: ["default"]`；

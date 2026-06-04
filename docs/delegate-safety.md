@@ -127,6 +127,12 @@ Anthropic-compatible Coding Plan endpoint for Claude Code and maps common model
 aliases to `doubao-seed-2.0-pro`; full provider details are documented in
 `docs/security.md`.
 
+## Gemini Non-Use
+
+`providerProfile: "gemini"` is rejected by `cc_delegate`. The Gemini direct API
+can produce review text through `cc_review`, but it does not expose the Claude
+Code filesystem, shell, or edit tool surface required by this delegate contract.
+
 ## Test Expectations
 
 The deterministic test suite should cover:

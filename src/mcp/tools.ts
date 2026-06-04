@@ -121,7 +121,8 @@ export function registerCcReviewTool(
     "cc_review",
     {
       title: "Claude Code Review",
-      description: "Run Claude Code as an external reviewer for Codex plans, diffs, or documents.",
+      description:
+        "Run Claude Code or a direct review-only provider as an external reviewer for Codex plans, diffs, or documents.",
       inputSchema: CcReviewInputObjectSchema.shape,
       outputSchema: CcReviewOutputSchema.shape,
       annotations: {

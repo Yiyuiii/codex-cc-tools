@@ -7,8 +7,8 @@ How to use `cc_review` and `cc_delegate` from Codex through the
 
 ### cc_review
 
-Use `cc_review` when you want a **second opinion** from Claude Code without
-letting it modify your working tree. Review tasks are read-only by contract.
+Use `cc_review` when you want a **second opinion** without letting the external
+provider modify your working tree. Review tasks are read-only by contract.
 
 | Task | When |
 | --- | --- |
@@ -17,7 +17,9 @@ letting it modify your working tree. Review tasks are read-only by contract.
 | `review_doc` | After writing or updating docs, README, AGENTS.md — check for accuracy, completeness, consistency with code. |
 | `adversarial_review` | When you need a deliberately skeptical second look — find what would break, what was overlooked, what assumptions are unstated. |
 
-**Default provider**: `anthropic` (native Claude Code).
+**Default provider**: `anthropic` (native Claude Code). `providerProfile:
+"gemini"` is also available for direct Gemini review, but it does not provide
+Claude Code file-reading or shell tools.
 
 **Key pattern**: Run `cc_review` at decision checkpoints — before implementing,
 before finalizing a diff, and after major documentation changes. Treat its
@@ -118,5 +120,6 @@ subprocess with its own environment, model, and working directory.
 | `anthropic` | High-stakes reviews where you want native Claude Code quality. Default for `cc_review`; `opus` resolves to `claude-opus-4-8`. |
 | `deepseek` | Routine delegated work where DeepSeek V4 Pro quality is adequate and cost matters. Default for `cc_delegate`. |
 | `ark_coding_plan` | Explicit fallback or comparison runs through Volcengine Ark Coding Plan. Common aliases route to `doubao-seed-2.0-pro`. |
+| `gemini` | Direct Gemini review-only fallback through `gemini-3.5-flash`. Valid for `cc_review`; rejected by `cc_delegate`. |
 
 You can override either default by setting `providerProfile` explicitly.

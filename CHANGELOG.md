@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.4.0-beta.0] - 2026-06-04
+
+- Add experimental direct `gemini` provider profile for `cc_review`, routing
+  Google Gemini `generateContent` requests to `gemini-3.5-flash` by default.
+- Read Gemini credentials from `GEMINI_API_KEY`, falling back to
+  `GOOGLE_API_KEY` and `GOOGLE_GENERATIVE_AI_API_KEY`; send the key through
+  `x-goog-api-key` and redact provider tokens from returned output.
+- Support `HTTPS_PROXY` / `HTTP_PROXY` for Gemini direct review requests.
+- Reject `providerProfile: "gemini"` in `cc_delegate` because Gemini direct API
+  does not expose Claude Code filesystem, shell, or edit tools.
+
 ## [0.3.0-beta.2] - 2026-05-29
 
 - Stop injecting default `tools: ["default"]` for all `cc_review` provider

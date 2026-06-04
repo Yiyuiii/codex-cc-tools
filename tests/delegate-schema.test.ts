@@ -35,6 +35,15 @@ describe("CcDelegateInputSchema", () => {
     expect(parsed.providerProfile).toBe("ark_coding_plan");
   });
 
+  it("accepts Gemini as an explicit provider profile", () => {
+    const parsed = CcDelegateInputSchema.parse({
+      prompt: "Run the requested commands.",
+      providerProfile: "gemini"
+    });
+
+    expect(parsed.providerProfile).toBe("gemini");
+  });
+
   it("rejects removed execution-space fields", () => {
     expect(() =>
       CcDelegateInputSchema.parse({

@@ -11,6 +11,7 @@ import {
   DEEPSEEK_PRO_MODEL,
   resolveDeepSeekModel
 } from "./deepseek.js";
+import { GEMINI_API_KEY_ENV_NAMES, resolveGeminiModel } from "./gemini.js";
 import { resolveAnthropicModel } from "./anthropic.js";
 
 export type ClaudeEffort = "low" | "medium" | "high" | "max";
@@ -42,6 +43,10 @@ const PROVIDER_ENV_BLOCKLIST = [
   "VOLCENGINE_API_KEY",
   "ARK_CODING_PLAN_ANTHROPIC_BASE_URL",
   "ARK_CODING_PLAN_BASE_URL",
+  "GEMINI_API_KEY",
+  "GEMINI_API_BASE_URL",
+  "GOOGLE_API_KEY",
+  "GOOGLE_GENERATIVE_AI_API_KEY",
   "ANTHROPIC_API_KEY",
   "ANTHROPIC_AUTH_TOKEN",
   "ANTHROPIC_BASE_URL",
@@ -95,7 +100,31 @@ export function buildProviderEnvironment(
     return buildDeepSeekEnvironment(input, sourceEnv, baseEnv);
   }
 
+  if (input.provider === "gemini") {
+    return buildGeminiEnvironmentRejection(input, sourceEnv, baseEnv);
+  }
+
   return buildArkCodingPlanEnvironment(input, sourceEnv, baseEnv);
+}
+
+function buildGeminiEnvironmentRejection(
+  input: BuildProviderEnvironmentInput,
+  sourceEnv: Record<string, string>,
+  baseEnv: Record<string, string>
+): ProviderEnvironmentResult {
+  const redactions = GEMINI_API_KEY_ENV_NAMES
+    .map((key) => sourceEnv[key]?.trim())
+    .filter((value): value is string => Boolean(value));
+
+  return {
+    ok: false,
+    provider: "gemini",
+    model: resolveGeminiModel(input.model),
+    env: baseEnv,
+    redactions,
+    error:
+      "Gemini provider profile is supported by the direct cc_review backend only; Claude Code subprocess routing and cc_delegate are not supported."
+  };
 }
 
 function buildDeepSeekEnvironment(

@@ -47,7 +47,8 @@ Use `codex-cc-tools` when Codex needs:
 
 - a stable review contract
 - autonomous delegation with explicit review and safety boundaries
-- provider-profile routing for Anthropic-compatible backends
+- provider-profile routing for Anthropic-compatible backends and direct
+  review-only backends
 - structured results that Codex can synthesize without scraping an interactive transcript
 
 Use a generic Claude Code wrapper when the goal is broad interactive orchestration rather than a bounded Codex handoff.

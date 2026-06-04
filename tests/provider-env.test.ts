@@ -268,4 +268,25 @@ describe("provider environment", () => {
       error: expect.stringContaining("https")
     });
   });
+
+  it("rejects Gemini in the Claude Code provider environment path", () => {
+    const result = buildProviderEnvironment({
+      provider: "gemini",
+      model: "opus",
+      effort: "medium",
+      cacheTtl: "1h",
+      sourceEnv: {
+        GEMINI_API_KEY: "gemini-token",
+        GOOGLE_API_KEY: "fallback-token"
+      }
+    });
+
+    expect(result).toMatchObject({
+      ok: false,
+      provider: "gemini",
+      model: "gemini-3.5-flash",
+      redactions: ["gemini-token", "fallback-token"],
+      error: expect.stringContaining("cc_review")
+    });
+  });
 });

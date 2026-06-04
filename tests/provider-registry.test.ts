@@ -7,7 +7,7 @@ import {
 } from "../src/providers/registry.js";
 
 describe("provider registry", () => {
-  it("exposes anthropic, deepseek, and Ark Coding Plan provider profiles", () => {
+  it("exposes anthropic, deepseek, Ark Coding Plan, and Gemini provider profiles", () => {
     expect(getProviderProfiles()).toEqual([
       {
         name: "anthropic",
@@ -22,6 +22,11 @@ describe("provider registry", () => {
       {
         name: "ark_coding_plan",
         role: "Volcengine Ark Coding Plan Claude Code provider",
+        experimental: true
+      },
+      {
+        name: "gemini",
+        role: "Google Gemini direct review provider",
         experimental: true
       }
     ]);
@@ -61,10 +66,23 @@ describe("provider registry", () => {
     );
   });
 
+  it("maps common model aliases for the Gemini provider", () => {
+    expect(resolveProviderProfile("gemini", "opus")).toEqual({
+      provider: "gemini",
+      model: "gemini-3.5-flash",
+      experimental: true
+    });
+    expect(resolveProviderProfile("gemini", "gemini-3.5-flash").model).toBe("gemini-3.5-flash");
+    expect(resolveProviderProfile("gemini", "models/gemini-3.5-flash").model).toBe(
+      "gemini-3.5-flash"
+    );
+  });
+
   it("validates provider profile names with zod", () => {
     expect(ProviderProfileSchema.parse("anthropic")).toBe("anthropic");
     expect(ProviderProfileSchema.parse("deepseek")).toBe("deepseek");
     expect(ProviderProfileSchema.parse("ark_coding_plan")).toBe("ark_coding_plan");
+    expect(ProviderProfileSchema.parse("gemini")).toBe("gemini");
     expect(() => ProviderProfileSchema.parse("unknown")).toThrow();
   });
 });

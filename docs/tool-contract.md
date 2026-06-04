@@ -10,13 +10,20 @@ and MCP tools.
 
 ## Review
 
-Use `review` for external critique of plans, diffs, and documents. It asks
-Claude Code not to edit files and returns review text plus optional structured
-output. Git diff, status, and untracked content are opt-in evidence sources.
+Use `review` for external critique of plans, diffs, and documents. It asks the
+selected provider not to edit files and returns review text plus optional
+structured output. Git diff, status, and untracked content are opt-in evidence
+sources.
 
 By default, `review` does not pass Claude Code `--allowedTools` for any
 provider profile. When callers provide the optional `tools` field, those values
 are forwarded as the explicit Claude Code tool allowlist.
+
+`providerProfile: "gemini"` is direct review-only. It calls Gemini
+`generateContent`, ignores Claude Code tool allowlists because no Claude Code
+subprocess is launched, and maps common aliases to `gemini-3.5-flash`.
+Claude Code-specific `effort` and `cacheTtl` settings are accepted by the shared
+schema but do not affect direct Gemini review behavior.
 
 ## Delegate
 
@@ -38,6 +45,8 @@ container, worktree, repository, and command policy remain outside this tool.
 `providerProfile: "anthropic"` when they want native Claude Code routing, or
 `providerProfile: "ark_coding_plan"` when they want Volcengine Ark Coding Plan
 routing.
+`providerProfile: "gemini"` is rejected for `delegate`; Gemini direct API does
+not provide the Claude Code execution tool surface.
 Callers may launch multiple `delegate` tasks in parallel. Each task starts a
 separate Claude Code subprocess from one complete prompt plus optional process
 settings, then returns its own structured result.

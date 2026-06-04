@@ -7,6 +7,7 @@
 - Claude Code CLI on `PATH`; `claude --version` should work
 - A DeepSeek API key if you use `cc_delegate` without overriding `providerProfile`
 - An Ark Coding Plan API key if you explicitly use `providerProfile: "ark_coding_plan"`
+- A Gemini API key if you explicitly use `providerProfile: "gemini"` for `cc_review`
 - Claude Code authenticated locally if you use the native `anthropic` provider profile
 - Codex or another MCP client that can start a stdio MCP server
 
@@ -35,6 +36,22 @@ It defaults to the Ark Coding Plan Anthropic-compatible Claude Code endpoint
 `https://ark.cn-beijing.volces.com/api/coding`. The OpenAI-compatible endpoint
 `https://ark.cn-beijing.volces.com/api/coding/v3` is for OpenAI-wire clients,
 not this Claude Code provider profile.
+
+The `gemini` provider profile is direct `cc_review` only. It requires one of
+these variables in the environment that starts Codex or the MCP server:
+
+```bash
+export GEMINI_API_KEY="your-gemini-api-key"
+# or
+export GOOGLE_API_KEY="your-gemini-api-key"
+# or
+export GOOGLE_GENERATIVE_AI_API_KEY="your-gemini-api-key"
+```
+
+It defaults to `https://generativelanguage.googleapis.com/v1beta` and inherits
+`HTTPS_PROXY` or `HTTP_PROXY` when present. `cc_delegate` rejects
+`providerProfile: "gemini"` because the Gemini API does not expose Claude Code
+filesystem, shell, or edit tools.
 
 ## Global Install
 
@@ -150,6 +167,18 @@ codex-cc-tools review \
   --context "Ark Coding Plan route smoke only. Report whether this review invocation works."
 ```
 
+Gemini smoke:
+
+```bash
+export GEMINI_API_KEY="your-gemini-api-key"
+export HTTPS_PROXY="http://127.0.0.1:10808" # optional
+codex-cc-tools review \
+  --provider-profile gemini \
+  --model gemini-3.5-flash \
+  --task review_doc \
+  --context "Gemini route smoke only. Reply with GEMINI_OK."
+```
+
 ## Local Development
 
 ```bash
@@ -178,5 +207,11 @@ node dist/mcp-server.js
 Anthropic-compatible endpoint and `doubao-seed-2.0-pro` alias defaults, while
 removing inherited Anthropic, Bedrock, Vertex, DeepSeek, Ark, and other
 provider-token route variables first.
+
+`gemini` is configured per direct review request from `GEMINI_API_KEY`,
+`GOOGLE_API_KEY`, or `GOOGLE_GENERATIVE_AI_API_KEY`. It calls Gemini
+`generateContent` directly with `gemini-3.5-flash` as the common alias target,
+uses `x-goog-api-key` instead of putting the key in the URL, and can inherit
+`HTTPS_PROXY` or `HTTP_PROXY` for transport.
 
 See [security.md](security.md) for provider environment and redaction boundaries.

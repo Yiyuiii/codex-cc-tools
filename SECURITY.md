@@ -63,5 +63,6 @@ sandboxing.
 
 ## Provider Security
 
-Details on provider environment inheritance, DeepSeek child-process routing, and
-provider-token redaction are documented in [docs/security.md](docs/security.md).
+Details on provider environment inheritance, DeepSeek / Ark child-process
+routing, Gemini direct review routing, and provider-token redaction are
+documented in [docs/security.md](docs/security.md).

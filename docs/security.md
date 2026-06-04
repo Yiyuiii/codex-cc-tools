@@ -2,7 +2,10 @@
 
 ## Provider Environment Scope
 
-Provider profile environment is constructed per Claude Code child process. The tool should not rewrite global shell configuration or persist provider credentials.
+Provider profile environment is constructed per invocation. Claude Code-backed
+profiles build a child-process environment; direct profiles such as `gemini`
+build request configuration without launching Claude Code. The tool should not
+rewrite global shell configuration or persist provider credentials.
 
 ## Claude Code Tool Allowlist Scope
 
@@ -74,6 +77,33 @@ The OpenAI-compatible Ark Coding Plan endpoint
 `https://ark.cn-beijing.volces.com/api/coding/v3` is intentionally not the
 default here because this MCP tool drives Claude Code through
 Anthropic-compatible environment variables.
+
+## Gemini Profile
+
+The `gemini` provider profile is a direct `cc_review` backend:
+
+- Token source priority: `GEMINI_API_KEY`, then `GOOGLE_API_KEY`, then
+  `GOOGLE_GENERATIVE_AI_API_KEY`.
+- Base URL: `https://generativelanguage.googleapis.com/v1beta`.
+- Optional override: `GEMINI_API_BASE_URL`, accepted only when it is a valid
+  HTTPS URL.
+- Model aliases: `opus`, `sonnet`, and `haiku` map to
+  `gemini-3.5-flash`. A `models/` prefix is stripped from direct Gemini model
+  names.
+- The API key is sent in the `x-goog-api-key` header, not in the request URL.
+- The request inherits `HTTPS_PROXY` or `HTTP_PROXY` when present. A proxy can
+  observe transport metadata.
+- `cc_delegate` rejects `providerProfile: "gemini"` because Gemini
+  `generateContent` does not expose Claude Code filesystem, shell, or edit
+  tools.
+- Gemini direct review does not use Claude Code-specific `effort`, `cacheTtl`,
+  or `tools` allowlist semantics. If callers provide `tools`, the returned
+  diagnostics state that they were ignored.
+- Direct Gemini HTTP requests have a 60 second request timeout before returning
+  a structured failure.
+- Successful Gemini review adds a non-secret diagnostic with the route host,
+  token source variable, optional proxy host, finish reason, and token counts
+  when Gemini reports them.
 
 ## Redaction Boundary
 

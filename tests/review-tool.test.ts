@@ -126,6 +126,36 @@ describe("runClaudeReview", () => {
     expect(observedArgs).not.toContain("--include-hook-events");
   });
 
+  it("routes Gemini reviews through the direct Gemini backend", async () => {
+    let claudeStarted = false;
+    const result = await runClaudeReview(
+      { ...baseInput, providerProfile: "gemini", model: "opus" },
+      {
+        execute: async () => {
+          claudeStarted = true;
+          throw new Error("Claude Code should not be started for Gemini review");
+        },
+        buildPacket: async () => "PACKET",
+        runGeminiReview: async (input, packet) => ({
+          ok: true,
+          task: input.task,
+          model: "gemini-3.5-flash",
+          elapsedMs: 5,
+          review: `Gemini saw ${packet}.`,
+          command: ["gemini", "generateContent", "--model", "gemini-3.5-flash"]
+        })
+      }
+    );
+
+    expect(claudeStarted).toBe(false);
+    expect(result).toMatchObject({
+      ok: true,
+      model: "gemini-3.5-flash",
+      review: "Gemini saw PACKET.",
+      command: ["gemini", "generateContent", "--model", "gemini-3.5-flash"]
+    });
+  });
+
   it("omits default allowed tools for every provider unless tools are explicit", async () => {
     const observedArgs: string[][] = [];
     const execute: ClaudeExecutor = async (_command, args) => {

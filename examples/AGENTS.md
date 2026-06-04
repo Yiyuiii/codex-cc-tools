@@ -31,6 +31,7 @@ This project uses `codex-cc-tools` to let Codex delegate work to Claude Code.
 | `anthropic` | Native Claude Code | `claude` on PATH, Claude Code authenticated |
 | `deepseek` | DeepSeek Anthropic-compatible endpoint | `DEEPSEEK_API_KEY` or `OPENAI_API_KEY_DEEPSEEK` |
 | `ark_coding_plan` | Volcengine Ark Coding Plan Anthropic-compatible endpoint | `ARK_API_KEY` or `VOLCENGINE_API_KEY` |
+| `gemini` | Google Gemini direct review-only endpoint | `GEMINI_API_KEY`, `GOOGLE_API_KEY`, or `GOOGLE_GENERATIVE_AI_API_KEY` |
 
 ### Safety
 
@@ -39,6 +40,8 @@ This project uses `codex-cc-tools` to let Codex delegate work to Claude Code.
   containers, or branch policies outside the tool.
 - Treat `cc_review` output as advisory evidence. Codex must explicitly accept,
   reject, or defer findings.
+- `gemini` is valid for `cc_review` only; `cc_delegate` requires a Claude Code
+  subprocess provider.
 
 ### MCP Configuration
 

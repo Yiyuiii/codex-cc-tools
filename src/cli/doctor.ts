@@ -61,7 +61,8 @@ export async function collectDoctorResults(deps: CollectDoctorDeps = {}): Promis
     mcpRegistrationResult(configText),
     ...registryResults(),
     deepSeekEnvResult(env),
-    arkCodingPlanEnvResult(env)
+    arkCodingPlanEnvResult(env),
+    geminiEnvResult(env)
   ];
 }
 
@@ -312,6 +313,44 @@ export function arkCodingPlanEnvResult(env: Record<string, string | undefined>):
     ok: false,
     level: "warn",
     detail: "no Ark Coding Plan key found; set ARK_API_KEY or VOLCENGINE_API_KEY before using providerProfile ark_coding_plan"
+  };
+}
+
+export function geminiEnvResult(env: Record<string, string | undefined>): DoctorResult {
+  const gemini = env.GEMINI_API_KEY;
+  const google = env.GOOGLE_API_KEY;
+  const googleGenerative = env.GOOGLE_GENERATIVE_AI_API_KEY;
+
+  const setKeys = [
+    gemini ? "GEMINI_API_KEY" : undefined,
+    google ? "GOOGLE_API_KEY" : undefined,
+    googleGenerative ? "GOOGLE_GENERATIVE_AI_API_KEY" : undefined
+  ].filter((item): item is string => Boolean(item));
+
+  if (setKeys.length > 1) {
+    return {
+      name: "Gemini environment",
+      ok: true,
+      level: "warn",
+      detail: `${setKeys.join(", ")} are set; GEMINI_API_KEY wins, then GOOGLE_API_KEY, then GOOGLE_GENERATIVE_AI_API_KEY`
+    };
+  }
+
+  if (setKeys.length === 1) {
+    return {
+      name: "Gemini environment",
+      ok: true,
+      level: "ok",
+      detail: `${setKeys[0]} is set for providerProfile gemini`
+    };
+  }
+
+  return {
+    name: "Gemini environment",
+    ok: false,
+    level: "warn",
+    detail:
+      "no Gemini key found; set GEMINI_API_KEY before using providerProfile gemini for cc_review"
   };
 }
 

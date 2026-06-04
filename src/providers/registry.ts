@@ -6,8 +6,9 @@ import {
 } from "./ark-coding-plan.js";
 import { resolveAnthropicModel } from "./anthropic.js";
 import { DEEPSEEK_FLASH_MODEL, resolveDeepSeekModel } from "./deepseek.js";
+import { resolveGeminiModel } from "./gemini.js";
 
-export const ProviderProfileSchema = z.enum(["anthropic", "deepseek", "ark_coding_plan"]);
+export const ProviderProfileSchema = z.enum(["anthropic", "deepseek", "ark_coding_plan", "gemini"]);
 export type ProviderProfileName = z.infer<typeof ProviderProfileSchema>;
 
 export interface ProviderProfileDefinition {
@@ -40,6 +41,11 @@ const PROVIDERS: ProviderProfileDefinition[] = [
     name: "ark_coding_plan",
     role: "Volcengine Ark Coding Plan Claude Code provider",
     experimental: true
+  },
+  {
+    name: "gemini",
+    role: "Google Gemini direct review provider",
+    experimental: true
   }
 ];
 
@@ -65,6 +71,14 @@ export function resolveProviderProfile(
       model: resolveDeepSeekModel(requestedModel) ?? requestedModel,
       subagentModel: DEEPSEEK_FLASH_MODEL,
       experimental: false
+    };
+  }
+
+  if (provider === "gemini") {
+    return {
+      provider,
+      model: resolveGeminiModel(requestedModel),
+      experimental: true
     };
   }
 

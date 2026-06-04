@@ -6,6 +6,10 @@ import type {
 import { runClaudeTask } from "../../core/claude-runner.js";
 import type { CacheUsage } from "../../core/claude-runner.js";
 import { buildReviewPacket } from "./packet.js";
+import {
+  runGeminiReview as defaultRunGeminiReview,
+  type RunGeminiReviewDeps
+} from "./gemini.js";
 import { CcReviewOutputSchema, type CcReviewInput, type CcReviewOutput } from "./schema.js";
 
 export const REVIEW_STDIN_PROMPT = "Review the packet provided on stdin.";
@@ -16,6 +20,11 @@ export interface RunClaudeReviewDeps {
   onActivity?: (event: ClaudeActivityEvent) => void;
   now?: () => number;
   buildPacket?: (input: CcReviewInput) => Promise<string>;
+  runGeminiReview?: (
+    input: CcReviewInput,
+    packet: string,
+    deps?: RunGeminiReviewDeps
+  ) => Promise<CcReviewOutput>;
   timeoutMs?: number;
   signal?: AbortSignal;
   sourceEnv?: Record<string, string | undefined>;
@@ -40,6 +49,14 @@ export async function runClaudeReview(
   }
 
   const packet = await (deps.buildPacket ?? buildReviewPacket)(input);
+  if (input.providerProfile === "gemini") {
+    return (deps.runGeminiReview ?? defaultRunGeminiReview)(input, packet, {
+      now: deps.now,
+      sourceEnv: deps.sourceEnv,
+      signal: deps.signal
+    });
+  }
+
   const result = await runClaudeTask(
     {
       cwd: input.cwd ?? process.cwd(),

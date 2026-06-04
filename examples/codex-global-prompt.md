@@ -17,7 +17,8 @@ Invoke `cc_review` when:
 - You want an adversarial review that deliberately looks for flaws.
 
 Available review tasks: `review_plan`, `review_diff`, `review_doc`,
-`adversarial_review`. Default `providerProfile` is `anthropic`.
+`adversarial_review`. Default `providerProfile` is `anthropic`. Use
+`providerProfile: "gemini"` only for direct review-only Gemini checks.
 
 Provide enough context for a useful review: the goal, acceptance criteria,
 known risks, and what tests have been run. Use `includeGitDiff` and
@@ -54,6 +55,8 @@ directly in the `prompt` field — there are no separate `context` or
 - Use `deepseek` (the `cc_delegate` default) for routine delegated work.
 - Use `ark_coding_plan` explicitly when the task should route through
   Volcengine Ark Coding Plan.
+- Use `gemini` explicitly only for `cc_review`; it is direct review-only and
+  is rejected by `cc_delegate`.
 - You may override either default with an explicit `providerProfile`.
 
 ## Parallelism

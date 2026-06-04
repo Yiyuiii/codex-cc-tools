@@ -38,6 +38,13 @@ export async function runClaudeDelegate(
     ], "cancelled", now, started);
   }
 
+  if (input.providerProfile === "gemini") {
+    return failureResult(input, "Gemini provider profile is direct cc_review only; cc_delegate requires a Claude Code subprocess with tool access.", [
+      "Use cc_review with providerProfile gemini for direct Gemini review.",
+      "Gemini AI Studio generateContent does not expose Claude Code filesystem, shell, or edit tools."
+    ], "failed", now, started, ["gemini"]);
+  }
+
   const prompt = await (deps.buildPacket ?? buildDelegatePacket)(input);
   const result = await runClaudeTask(
     {
@@ -102,7 +109,8 @@ function failureResult(
   diagnostics: string[],
   status: "failed" | "cancelled" | "timed_out",
   now: () => number,
-  started: number
+  started: number,
+  command: string[] = ["claude"]
 ): CcDelegateOutput {
   return CcDelegateOutputSchema.parse({
     ok: false,
@@ -115,7 +123,7 @@ function failureResult(
     verification: [],
     risks: [],
     diagnostics: diagnostics.map(redactSecrets),
-    command: ["claude"]
+    command
   });
 }
 
