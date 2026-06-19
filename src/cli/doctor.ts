@@ -62,6 +62,7 @@ export async function collectDoctorResults(deps: CollectDoctorDeps = {}): Promis
     ...registryResults(),
     deepSeekEnvResult(env),
     arkCodingPlanEnvResult(env),
+    arkAgentPlanEnvResult(env),
     geminiEnvResult(env)
   ];
 }
@@ -313,6 +314,25 @@ export function arkCodingPlanEnvResult(env: Record<string, string | undefined>):
     ok: false,
     level: "warn",
     detail: "no Ark Coding Plan key found; set ARK_API_KEY or VOLCENGINE_API_KEY before using providerProfile ark_coding_plan"
+  };
+}
+
+export function arkAgentPlanEnvResult(env: Record<string, string | undefined>): DoctorResult {
+  if (env.OPENAI_API_KEY_DOUBAO) {
+    return {
+      name: "Ark Agent Plan environment",
+      ok: true,
+      level: "ok",
+      detail: "OPENAI_API_KEY_DOUBAO is set for providerProfile ark_agent_plan"
+    };
+  }
+
+  return {
+    name: "Ark Agent Plan environment",
+    ok: false,
+    level: "warn",
+    detail:
+      "no Ark Agent Plan key found; set OPENAI_API_KEY_DOUBAO before using providerProfile ark_agent_plan"
   };
 }
 

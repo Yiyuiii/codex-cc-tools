@@ -374,15 +374,13 @@ function parseClaudeOutput(
       usage?: unknown;
       total_cost_usd?: unknown;
     };
+    const review = firstNonBlankString(
+      typeof parsed.result === "string" ? parsed.result : undefined,
+      typeof parsed.message === "string" ? parsed.message : undefined,
+      stringifyStructuredOutput(parsed.structured_output)
+    );
     return {
-      review:
-        typeof parsed.result === "string"
-          ? parsed.result
-          : typeof parsed.message === "string"
-            ? parsed.message
-            : parsed.structured_output !== undefined
-              ? JSON.stringify(parsed.structured_output, null, 2)
-              : stdout,
+      review: review ?? stdout,
       structured: parsed.structured_output,
       cache: parseCacheUsage(parsed.usage),
       costUsd: typeof parsed.total_cost_usd === "number" ? parsed.total_cost_usd : undefined,
@@ -464,7 +462,11 @@ function createClaudeStreamParser(options: { onActivity?: (event: ClaudeActivity
     }
 
     return {
-      review: review || transcript.join("\n\n"),
+      review: firstNonBlankString(
+        review,
+        transcript.join("\n\n"),
+        stringifyStructuredOutput(structured)
+      ) ?? "",
       structured,
       eventsTail: events,
       transcriptTail: transcript,
@@ -477,6 +479,14 @@ function createClaudeStreamParser(options: { onActivity?: (event: ClaudeActivity
   }
 
   return { pushLine, finish };
+}
+
+function firstNonBlankString(...values: Array<string | undefined>): string | undefined {
+  return values.find((value) => value !== undefined && value.trim().length > 0);
+}
+
+function stringifyStructuredOutput(value: unknown): string | undefined {
+  return value === undefined ? undefined : JSON.stringify(value, null, 2);
 }
 
 function normalizeClaudeStreamEvent(

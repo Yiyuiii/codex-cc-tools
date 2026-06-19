@@ -47,6 +47,13 @@ describe("CcReviewInputSchema", () => {
       CcReviewInputSchema.parse({
         task: "review_doc",
         context: "Review this document.",
+        providerProfile: "ark_agent_plan"
+      }).providerProfile
+    ).toBe("ark_agent_plan");
+    expect(
+      CcReviewInputSchema.parse({
+        task: "review_doc",
+        context: "Review this document.",
         providerProfile: "gemini"
       }).providerProfile
     ).toBe("gemini");
@@ -70,7 +77,13 @@ describe("CcReviewInputSchema", () => {
   });
 
   it("keeps review tools unset for every provider unless the request provides tools", () => {
-    for (const providerProfile of ["anthropic", "deepseek", "ark_coding_plan", "gemini"] as const) {
+    for (const providerProfile of [
+      "anthropic",
+      "deepseek",
+      "ark_coding_plan",
+      "ark_agent_plan",
+      "gemini"
+    ] as const) {
       expect(
         CcReviewInputSchema.parse({
           task: "review_doc",

@@ -170,7 +170,8 @@ describe("runClaudeReview", () => {
     for (const [index, providerProfile, sourceEnv] of [
       [0, "anthropic", {}],
       [1, "deepseek", { DEEPSEEK_API_KEY: "deepseek-token" }],
-      [2, "ark_coding_plan", { ARK_API_KEY: "ark-token" }]
+      [2, "ark_coding_plan", { ARK_API_KEY: "ark-token" }],
+      [3, "ark_agent_plan", { OPENAI_API_KEY_DOUBAO: "doubao-token" }]
     ] as const) {
       await runClaudeReview(
         CcReviewInputSchema.parse({
@@ -200,14 +201,15 @@ describe("runClaudeReview", () => {
         execute,
         buildPacket: async () => "PACKET",
         sourceEnv: { ARK_API_KEY: "ark-token" },
-        now: fakeClock([3, 4])
+        now: fakeClock([9, 10])
       }
     );
 
     expect(observedArgs[0]).not.toContain("--allowedTools");
     expect(observedArgs[1]).not.toContain("--allowedTools");
     expect(observedArgs[2]).not.toContain("--allowedTools");
-    expect(observedArgs[3]?.slice(observedArgs[3].indexOf("--allowedTools"), observedArgs[3].indexOf("--output-format"))).toEqual([
+    expect(observedArgs[3]).not.toContain("--allowedTools");
+    expect(observedArgs[4]?.slice(observedArgs[4].indexOf("--allowedTools"), observedArgs[4].indexOf("--output-format"))).toEqual([
       "--allowedTools",
       "default"
     ]);

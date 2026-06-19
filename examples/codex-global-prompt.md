@@ -55,6 +55,8 @@ directly in the `prompt` field — there are no separate `context` or
 - Use `deepseek` (the `cc_delegate` default) for routine delegated work.
 - Use `ark_coding_plan` explicitly when the task should route through
   Volcengine Ark Coding Plan.
+- Use `ark_agent_plan` explicitly when the task should route through
+  Volcengine Ark Agent Plan's separate plan/quota pool.
 - Use `gemini` explicitly only for `cc_review`; it is direct review-only and
   is rejected by `cc_delegate`. If Gemini direct access needs a local proxy,
   pass `geminiProxyUrl` on that `cc_review` request.

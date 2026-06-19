@@ -26,7 +26,7 @@ claude -p "<prompt>"
 
 The MCP tool adds only:
 
-- provider-profile routing such as `anthropic`, `deepseek`, or `ark_coding_plan`
+- provider-profile routing such as `anthropic`, `deepseek`, `ark_coding_plan`, or `ark_agent_plan`
 - model, effort, cache, stream, timeout, and working-directory options
 - process execution and cancellation handling
 - structured result parsing and formatting
@@ -124,8 +124,17 @@ environment as documented in `docs/security.md`.
 Callers can set `providerProfile: "ark_coding_plan"` to route the Claude Code
 child process through Volcengine Ark Coding Plan. The profile uses Ark's
 Anthropic-compatible Coding Plan endpoint for Claude Code and maps common model
-aliases to `doubao-seed-2.0-pro`; full provider details are documented in
+aliases to `ark-code-latest`; full provider details are documented in
 `docs/security.md`.
+
+## Ark Agent Plan Use
+
+Callers can set `providerProfile: "ark_agent_plan"` to route the Claude Code
+child process through Volcengine Ark Agent Plan. The profile uses Ark's
+Anthropic-compatible Agent Plan endpoint for Claude Code, reads
+`OPENAI_API_KEY_DOUBAO`, maps common model aliases to `glm-5.2`, and uses a
+separate plan/quota pool from `ark_coding_plan`; full provider details are
+documented in `docs/security.md`.
 
 ## Gemini Non-Use
 

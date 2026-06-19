@@ -50,6 +50,18 @@ The Ark key is injected only into the Claude Code child process and is redacted
 from returned output. If both variables are present with different values,
 `ARK_API_KEY` wins.
 
+## Ark Agent Plan Provider Fails Configuration
+
+Set:
+
+```bash
+OPENAI_API_KEY_DOUBAO=...
+```
+
+The key is injected only into the Claude Code child process and is redacted
+from returned output. This profile uses a separate plan/quota pool from
+`ark_coding_plan`.
+
 ## Gemini Provider Fails Configuration
 
 Set one of:
@@ -91,6 +103,23 @@ diagnostic such as:
 Ark Coding Plan route target: ark.cn-beijing.volces.com; token source: ARK_API_KEY.
 ```
 
+## Ark Agent Plan Uses The Wrong Endpoint
+
+`ark_agent_plan` is a Claude Code provider profile, so it defaults to the
+Anthropic-compatible Agent Plan endpoint:
+
+```text
+https://ark.cn-beijing.volces.com/api/plan
+```
+
+Do not use `https://ark.cn-beijing.volces.com/api/plan/v3` for this profile;
+that endpoint is for OpenAI-wire clients. Successful runs include a non-secret
+diagnostic such as:
+
+```text
+Ark Agent Plan route target: ark.cn-beijing.volces.com; token source: OPENAI_API_KEY_DOUBAO.
+```
+
 ## Delegate Runs In The Wrong Place
 
 `cc_delegate` does not create, inspect, or enforce execution spaces. If a task
@@ -123,8 +152,8 @@ codex-cc-tools doctor
 
 `doctor` checks Node, npm, Codex CLI, Claude Code CLI, daemon state,
 background jobs, Codex config file presence, MCP registration status,
-registered tasks and providers, and DeepSeek / Ark Coding Plan / Gemini
-environment variables.
+registered tasks and providers, and DeepSeek / Ark Coding Plan / Ark Agent Plan
+/ Gemini environment variables.
 
 If `codex-cc-tools install` does not write the config block to the expected
 path:
@@ -183,6 +212,13 @@ only if you use `cc_delegate` with its default `deepseek` profile.
 
 This is a warning, not an error. Set `ARK_API_KEY` or `VOLCENGINE_API_KEY` only
 if you use `providerProfile: "ark_coding_plan"`.
+
+## Doctor Reports Missing Ark Agent Plan Key
+
+`[warn] Ark Agent Plan environment: no Ark Agent Plan key found`
+
+This is a warning, not an error. Set `OPENAI_API_KEY_DOUBAO` only if you use
+`providerProfile: "ark_agent_plan"`.
 
 ## Doctor Reports Missing Gemini Key
 

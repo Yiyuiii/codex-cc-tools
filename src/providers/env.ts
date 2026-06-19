@@ -1,9 +1,14 @@
 import type { ProviderProfileName } from "./registry.js";
 import {
   ARK_CODING_PLAN_BASE_URL,
-  ARK_CODING_PLAN_PRO_MODEL,
+  ARK_CODING_PLAN_DEFAULT_MODEL,
   resolveArkCodingPlanModel
 } from "./ark-coding-plan.js";
+import {
+  ARK_AGENT_PLAN_BASE_URL,
+  ARK_AGENT_PLAN_DEFAULT_MODEL,
+  resolveArkAgentPlanModel
+} from "./ark-agent-plan.js";
 import {
   DEEPSEEK_ALLOWED_MODEL_INPUTS,
   DEEPSEEK_BASE_URL,
@@ -41,8 +46,11 @@ const PROVIDER_ENV_BLOCKLIST = [
   "DEEPSEEK_ANTHROPIC_BASE_URL",
   "ARK_API_KEY",
   "VOLCENGINE_API_KEY",
+  "OPENAI_API_KEY_DOUBAO",
   "ARK_CODING_PLAN_ANTHROPIC_BASE_URL",
   "ARK_CODING_PLAN_BASE_URL",
+  "ARK_AGENT_PLAN_ANTHROPIC_BASE_URL",
+  "ARK_AGENT_PLAN_BASE_URL",
   "GEMINI_API_KEY",
   "GEMINI_API_BASE_URL",
   "GOOGLE_API_KEY",
@@ -102,6 +110,10 @@ export function buildProviderEnvironment(
 
   if (input.provider === "gemini") {
     return buildGeminiEnvironmentRejection(input, sourceEnv, baseEnv);
+  }
+
+  if (input.provider === "ark_agent_plan") {
+    return buildArkAgentPlanEnvironment(input, sourceEnv, baseEnv);
   }
 
   return buildArkCodingPlanEnvironment(input, sourceEnv, baseEnv);
@@ -246,16 +258,73 @@ function buildArkCodingPlanEnvironment(
       ANTHROPIC_BASE_URL: baseUrl.url,
       ANTHROPIC_AUTH_TOKEN: token,
       ANTHROPIC_MODEL: model,
-      ANTHROPIC_DEFAULT_OPUS_MODEL: ARK_CODING_PLAN_PRO_MODEL,
-      ANTHROPIC_DEFAULT_SONNET_MODEL: ARK_CODING_PLAN_PRO_MODEL,
-      ANTHROPIC_DEFAULT_HAIKU_MODEL: ARK_CODING_PLAN_PRO_MODEL,
-      ANTHROPIC_SMALL_FAST_MODEL: ARK_CODING_PLAN_PRO_MODEL,
-      CLAUDE_CODE_SUBAGENT_MODEL: ARK_CODING_PLAN_PRO_MODEL,
+      ANTHROPIC_DEFAULT_OPUS_MODEL: ARK_CODING_PLAN_DEFAULT_MODEL,
+      ANTHROPIC_DEFAULT_SONNET_MODEL: ARK_CODING_PLAN_DEFAULT_MODEL,
+      ANTHROPIC_DEFAULT_HAIKU_MODEL: ARK_CODING_PLAN_DEFAULT_MODEL,
+      ANTHROPIC_SMALL_FAST_MODEL: ARK_CODING_PLAN_DEFAULT_MODEL,
+      CLAUDE_CODE_SUBAGENT_MODEL: ARK_CODING_PLAN_DEFAULT_MODEL,
       CLAUDE_CODE_EFFORT_LEVEL: input.effort,
       CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: "1"
     },
     redactions,
     diagnostics: [arkCodingPlanRouteDiagnostic(baseUrl.url, tokenSource)]
+  };
+}
+
+function buildArkAgentPlanEnvironment(
+  input: BuildProviderEnvironmentInput,
+  sourceEnv: Record<string, string>,
+  baseEnv: Record<string, string>
+): ProviderEnvironmentResult {
+  const model = resolveArkAgentPlanModel(input.model);
+  const token = sourceEnv.OPENAI_API_KEY_DOUBAO?.trim();
+  const redactions = token ? [token] : [];
+  if (!token) {
+    return {
+      ok: false,
+      provider: "ark_agent_plan",
+      model,
+      env: baseEnv,
+      redactions: [],
+      error:
+        "Ark Agent Plan provider profile requires OPENAI_API_KEY_DOUBAO in the environment."
+    };
+  }
+
+  const baseUrl = resolveArkAgentPlanBaseUrl(
+    sourceEnv.ARK_AGENT_PLAN_ANTHROPIC_BASE_URL,
+    sourceEnv.ARK_AGENT_PLAN_BASE_URL
+  );
+  if (!baseUrl.ok) {
+    return {
+      ok: false,
+      provider: "ark_agent_plan",
+      model,
+      env: baseEnv,
+      redactions,
+      error: baseUrl.error
+    };
+  }
+
+  return {
+    ok: true,
+    provider: "ark_agent_plan",
+    model,
+    env: {
+      ...omitProviderRouteEnv(baseEnv),
+      ANTHROPIC_BASE_URL: baseUrl.url,
+      ANTHROPIC_AUTH_TOKEN: token,
+      ANTHROPIC_MODEL: model,
+      ANTHROPIC_DEFAULT_OPUS_MODEL: ARK_AGENT_PLAN_DEFAULT_MODEL,
+      ANTHROPIC_DEFAULT_SONNET_MODEL: ARK_AGENT_PLAN_DEFAULT_MODEL,
+      ANTHROPIC_DEFAULT_HAIKU_MODEL: ARK_AGENT_PLAN_DEFAULT_MODEL,
+      ANTHROPIC_SMALL_FAST_MODEL: ARK_AGENT_PLAN_DEFAULT_MODEL,
+      CLAUDE_CODE_SUBAGENT_MODEL: ARK_AGENT_PLAN_DEFAULT_MODEL,
+      CLAUDE_CODE_EFFORT_LEVEL: input.effort,
+      CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: "1"
+    },
+    redactions,
+    diagnostics: [arkAgentPlanRouteDiagnostic(baseUrl.url)]
   };
 }
 
@@ -359,4 +428,34 @@ function resolveArkCodingPlanBaseUrl(
 function arkCodingPlanRouteDiagnostic(baseUrl: string, tokenSource: string): string {
   const host = new URL(baseUrl).host;
   return `Ark Coding Plan route target: ${host}; token source: ${tokenSource}.`;
+}
+
+function resolveArkAgentPlanBaseUrl(
+  preferredOverride: string | undefined,
+  fallbackOverride: string | undefined
+): BaseUrlResult {
+  const candidate = (preferredOverride?.trim() || fallbackOverride?.trim() || ARK_AGENT_PLAN_BASE_URL);
+
+  try {
+    const url = new URL(candidate);
+    if (url.protocol !== "https:" || !url.hostname) {
+      return {
+        ok: false,
+        error:
+          "ARK_AGENT_PLAN_ANTHROPIC_BASE_URL must be an https URL with a non-empty host when provided."
+      };
+    }
+    return { ok: true, url: url.toString().replace(/\/$/, "") };
+  } catch {
+    return {
+      ok: false,
+      error:
+        "ARK_AGENT_PLAN_ANTHROPIC_BASE_URL must be a valid https URL with a non-empty host when provided."
+    };
+  }
+}
+
+function arkAgentPlanRouteDiagnostic(baseUrl: string): string {
+  const host = new URL(baseUrl).host;
+  return `Ark Agent Plan route target: ${host}; token source: OPENAI_API_KEY_DOUBAO.`;
 }

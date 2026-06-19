@@ -1,5 +1,25 @@
 # Changelog
 
+## Unreleased
+
+## [0.4.0-beta.2] - 2026-06-19
+
+- Add explicit `ark_agent_plan` provider profile for Volcengine Ark Agent Plan.
+  It reads `OPENAI_API_KEY_DOUBAO`, routes Claude Code through the
+  Anthropic-compatible endpoint `https://ark.cn-beijing.volces.com/api/plan`,
+  maps common aliases to `glm-5.2`, and documents the OpenAI-compatible
+  endpoint `https://ark.cn-beijing.volces.com/api/plan/v3` as a non-default
+  OpenAI-wire route.
+- Route Ark Coding Plan common model aliases (`opus`, `sonnet`, `haiku`) to
+  `ark-code-latest` by default, while keeping legacy `glm-latest`,
+  `Doubao-Seed-2.0-pro`, and `doubao-seed-2.0-pro` inputs as compatibility
+  aliases to `ark-code-latest`.
+- Treat Ark common Claude Code aliases case-insensitively so `Opus` / `OPUS`
+  resolve the same way as `opus`.
+- Format Claude Code `structured_output` when the child process returns a blank
+  `result` / transcript, avoiding successful-but-empty `review` / `delegate`
+  bodies.
+
 ## [0.4.0-beta.1] - 2026-06-04
 
 - Add `geminiProxyUrl` to `cc_review` and `--gemini-proxy-url` to the CLI for

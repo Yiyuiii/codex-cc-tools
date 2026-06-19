@@ -8,7 +8,7 @@
 
 本仓库不是 `codex-cc-reviewer` 的重命名，而是同一架构下更聚焦的工具族：
 
-- provider profile：任务使用哪个后端，例如 Claude Code-backed 的 `anthropic`、`deepseek`、`ark_coding_plan`，或直接 review-only 的 `gemini`
+- provider profile：任务使用哪个后端，例如 Claude Code-backed 的 `anthropic`、`deepseek`、`ark_coding_plan`、`ark_agent_plan`，或直接 review-only 的 `gemini`
 - task：Codex 要 Claude Code 做什么，目前是 `review` 或 `delegate`
 - authority：只读审阅或显式工作区写入
 - result contract：返回 Codex 可以直接综合、采纳、拒绝或搁置的结构化结果
@@ -22,6 +22,7 @@
 - 本机可运行 `claude`，并且 `claude --version` 应该成功
 - 使用 `cc_delegate` 且不覆盖 `providerProfile` 时需要 DeepSeek API key
 - 显式使用 `providerProfile: "ark_coding_plan"` 时需要 Ark Coding Plan API key
+- 显式使用 `providerProfile: "ark_agent_plan"` 时需要 Ark Agent Plan API key
 - 显式使用 `providerProfile: "gemini"` 做 `cc_review` 时需要 Gemini API key
 - 如果使用原生 `anthropic` provider profile，需要 Claude Code 已完成本地登录或配置
 - Codex 或其他支持 stdio MCP server 的客户端
@@ -159,22 +160,64 @@ ARK_CODING_PLAN_ANTHROPIC_BASE_URL=https://ark.cn-beijing.volces.com/api/coding
 - `ANTHROPIC_BASE_URL=https://ark.cn-beijing.volces.com/api/coding`
 - `ANTHROPIC_AUTH_TOKEN=<解析到的 Ark Coding Plan key>`
 - `ANTHROPIC_MODEL=<解析后的请求模型>`
-- `ANTHROPIC_DEFAULT_OPUS_MODEL=doubao-seed-2.0-pro`
-- `ANTHROPIC_DEFAULT_SONNET_MODEL=doubao-seed-2.0-pro`
-- `ANTHROPIC_DEFAULT_HAIKU_MODEL=doubao-seed-2.0-pro`
-- `ANTHROPIC_SMALL_FAST_MODEL=doubao-seed-2.0-pro`
-- `CLAUDE_CODE_SUBAGENT_MODEL=doubao-seed-2.0-pro`
+- `ANTHROPIC_DEFAULT_OPUS_MODEL=ark-code-latest`
+- `ANTHROPIC_DEFAULT_SONNET_MODEL=ark-code-latest`
+- `ANTHROPIC_DEFAULT_HAIKU_MODEL=ark-code-latest`
+- `ANTHROPIC_SMALL_FAST_MODEL=ark-code-latest`
+- `CLAUDE_CODE_SUBAGENT_MODEL=ark-code-latest`
 - `CLAUDE_CODE_EFFORT_LEVEL=<请求的 effort>`
 
 Ark Coding Plan profile 接受的模型参数：
 
 | 输入模型 | 实际 Ark Coding Plan 模型 |
 | --- | --- |
-| `opus` | `doubao-seed-2.0-pro` |
-| `sonnet` | `doubao-seed-2.0-pro` |
-| `haiku` | `doubao-seed-2.0-pro` |
-| `Doubao-Seed-2.0-pro` | `doubao-seed-2.0-pro` |
-| `doubao-seed-2.0-pro` | `doubao-seed-2.0-pro` |
+| `opus` | `ark-code-latest` |
+| `sonnet` | `ark-code-latest` |
+| `haiku` | `ark-code-latest` |
+| `ark-code-latest` | `ark-code-latest` |
+| `glm-latest` | `ark-code-latest` |
+| `Doubao-Seed-2.0-pro` | `ark-code-latest` |
+| `doubao-seed-2.0-pro` | `ark-code-latest` |
+| 其它非空字符串 | 作为 Ark 模型名直接传入 |
+
+如果要使用 Ark Agent Plan，需要在启动 Codex 或 MCP server 的环境里设置：
+
+```bash
+export OPENAI_API_KEY_DOUBAO="your-doubao-plan-api-key"
+```
+
+这个 profile 和 `ark_coding_plan` 属于同一火山方舟/Ark 模型家族，但走不同的
+plan/额度池。可选覆盖：
+
+```bash
+ARK_AGENT_PLAN_ANTHROPIC_BASE_URL=https://ark.cn-beijing.volces.com/api/plan
+```
+
+普通用户不需要设置这个覆盖项。本包通过 Claude Code 的 Anthropic-compatible
+环境变量路由，所以 `ark_agent_plan` 默认使用
+`https://ark.cn-beijing.volces.com/api/plan`。`https://ark.cn-beijing.volces.com/api/plan/v3`
+是给 OpenAI-wire 客户端使用的端点，不是这个 Claude Code provider profile 的默认端点。
+
+当调用时传入 `providerProfile: "ark_agent_plan"`，本包会为 Claude Code 子进程临时构造 Ark Agent Plan 路由：
+
+- `ANTHROPIC_BASE_URL=https://ark.cn-beijing.volces.com/api/plan`
+- `ANTHROPIC_AUTH_TOKEN=<OPENAI_API_KEY_DOUBAO>`
+- `ANTHROPIC_MODEL=<解析后的请求模型>`
+- `ANTHROPIC_DEFAULT_OPUS_MODEL=glm-5.2`
+- `ANTHROPIC_DEFAULT_SONNET_MODEL=glm-5.2`
+- `ANTHROPIC_DEFAULT_HAIKU_MODEL=glm-5.2`
+- `ANTHROPIC_SMALL_FAST_MODEL=glm-5.2`
+- `CLAUDE_CODE_SUBAGENT_MODEL=glm-5.2`
+- `CLAUDE_CODE_EFFORT_LEVEL=<请求的 effort>`
+
+Ark Agent Plan profile 接受的模型参数：
+
+| 输入模型 | 实际 Ark Agent Plan 模型 |
+| --- | --- |
+| `opus` | `glm-5.2` |
+| `sonnet` | `glm-5.2` |
+| `haiku` | `glm-5.2` |
+| `glm-5.2` | `glm-5.2` |
 | 其它非空字符串 | 作为 Ark 模型名直接传入 |
 
 ## 工具
@@ -197,7 +240,7 @@ Claude Code 的输出是建议性证据，Codex 必须明确说明采纳、拒�
 
 所有工具都支持：
 
-- `providerProfile`：`cc_review` 默认 `anthropic`；`cc_delegate` 默认 `deepseek`；可显式传 `anthropic`、`deepseek`、`ark_coding_plan` 或 review-only 的 `gemini`
+- `providerProfile`：`cc_review` 默认 `anthropic`；`cc_delegate` 默认 `deepseek`；可显式传 `anthropic`、`deepseek`、`ark_coding_plan`、`ark_agent_plan` 或 review-only 的 `gemini`
 - `model`：默认 `opus`，按 provider profile 解析别名
 - `effort`：默认 `max`，可选 `low`、`medium`、`high`、`max`
 - `cwd`：适用任务的工作目录
@@ -273,6 +316,17 @@ codex-cc-tools review \
   --context "Ark Coding Plan route smoke only. Report whether this review invocation works."
 ```
 
+Ark Agent Plan CLI 冒烟：
+
+```bash
+export OPENAI_API_KEY_DOUBAO="your-doubao-plan-api-key"
+codex-cc-tools review \
+  --provider-profile ark_agent_plan \
+  --model opus \
+  --task review_doc \
+  --context "Ark Agent Plan route smoke only. Report whether this review invocation works."
+```
+
 Gemini CLI 冒烟：
 
 ```bash
@@ -291,8 +345,8 @@ codex-cc-tools review \
 
 | 设置 | 默认值 | 说明 |
 | --- | --- | --- |
-| `providerProfile` | `cc_review`: `anthropic`; `cc_delegate`: `deepseek` | `anthropic` 使用原生 Claude Code profile/auth。`deepseek` 需要 `DEEPSEEK_API_KEY` 或 `OPENAI_API_KEY_DEEPSEEK`；`ark_coding_plan` 需要 `ARK_API_KEY` 或 `VOLCENGINE_API_KEY`；review-only 的 `gemini` 需要 `GEMINI_API_KEY` 或 Google fallback key。 |
-| `model` | `opus` | DeepSeek profile 中，`opus` 和 `sonnet` 映射到 `deepseek-v4-pro[1m]`，`haiku` 映射到 `deepseek-v4-flash`。Ark Coding Plan 中常见别名映射到 `doubao-seed-2.0-pro`。Gemini 中常见别名映射到 `gemini-3.5-flash`。 |
+| `providerProfile` | `cc_review`: `anthropic`; `cc_delegate`: `deepseek` | `anthropic` 使用原生 Claude Code profile/auth。`deepseek` 需要 `DEEPSEEK_API_KEY` 或 `OPENAI_API_KEY_DEEPSEEK`；`ark_coding_plan` 需要 `ARK_API_KEY` 或 `VOLCENGINE_API_KEY`；`ark_agent_plan` 需要 `OPENAI_API_KEY_DOUBAO`；review-only 的 `gemini` 需要 `GEMINI_API_KEY` 或 Google fallback key。 |
+| `model` | `opus` | DeepSeek profile 中，`opus` 和 `sonnet` 映射到 `deepseek-v4-pro[1m]`，`haiku` 映射到 `deepseek-v4-flash`。Ark Coding Plan 中常见别名映射到 `ark-code-latest`，旧的 `glm-latest` 和 `doubao-seed-2.0-pro` 输入也会归一到 `ark-code-latest`。Ark Agent Plan 中常见别名映射到 `glm-5.2`。Gemini 中常见别名映射到 `gemini-3.5-flash`。 |
 | `effort` | `max` | 更慢，也可能更贵。对按量计费 provider，常规检查建议改成 `medium` 或 `low`。 |
 | `cacheTtl` | `1h` | 给 Claude Code prompt cache 的提示；cache 和 cost 字段以 Claude Code/provider 报告为准。 |
 | `redactSecrets` | review 证据默认 `true` | 只是尽力脱敏；不要把秘密放进 prompt、文件或命令输出。 |
@@ -315,6 +369,7 @@ codex-cc-tools doctor
 - Codex 看不到工具：修改 MCP 配置后重启 Codex。
 - DeepSeek 提示缺少凭据：在启动 Codex 或 MCP server 的环境里设置 `DEEPSEEK_API_KEY` 或 `OPENAI_API_KEY_DEEPSEEK`。
 - Ark Coding Plan 提示缺少凭据：在启动 Codex 或 MCP server 的环境里设置 `ARK_API_KEY` 或 `VOLCENGINE_API_KEY`。
+- Ark Agent Plan 提示缺少凭据：在启动 Codex 或 MCP server 的环境里设置 `OPENAI_API_KEY_DOUBAO`。
 - Gemini 直连超时：在 `cc_review` 请求里传 `geminiProxyUrl`，或在 CLI 使用 `--gemini-proxy-url`。`HTTPS_PROXY` / `HTTP_PROXY` 仍会作为进程环境后备。
 - 只在某个终端里设置 key 不够，除非 Codex/MCP server 也是从这个终端启动的。请从包含该变量的环境重启 Codex，或设置 OS 级持久用户变量。
 - DeepSeek 控制台没有请求：对照返回诊断里的 token source，例如 `DeepSeek route target: api.deepseek.com; token source: OPENAI_API_KEY_DEEPSEEK.`，确认监控的是同一个 key/账号。
@@ -334,7 +389,7 @@ codex-cc-tools doctor
 - `cc_review`：第二意见审阅
 - `cc_delegate`：由 prompt 驱动的 Claude Code 执行，可按任务范围只读或写入
 
-Provider routing 与 task 正交。DeepSeek、Ark Coding Plan 和 Gemini 都不是任务，而是通过 `providerProfile` 选择的后端。Gemini 当前只支持 review。
+Provider routing 与 task 正交。DeepSeek、Ark Coding Plan、Ark Agent Plan 和 Gemini 都不是任务，而是通过 `providerProfile` 选择的后端。Gemini 当前只支持 review。
 
 ## 文档
 

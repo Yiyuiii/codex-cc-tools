@@ -35,6 +35,15 @@ describe("CcDelegateInputSchema", () => {
     expect(parsed.providerProfile).toBe("ark_coding_plan");
   });
 
+  it("accepts Ark Agent Plan as an explicit provider profile", () => {
+    const parsed = CcDelegateInputSchema.parse({
+      prompt: "Run the requested commands.",
+      providerProfile: "ark_agent_plan"
+    });
+
+    expect(parsed.providerProfile).toBe("ark_agent_plan");
+  });
+
   it("accepts Gemini as an explicit provider profile", () => {
     const parsed = CcDelegateInputSchema.parse({
       prompt: "Run the requested commands.",

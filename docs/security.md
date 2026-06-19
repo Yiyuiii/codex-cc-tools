@@ -63,10 +63,10 @@ The `ark_coding_plan` provider profile builds a fresh child-process route:
 - Optional override: `ARK_CODING_PLAN_ANTHROPIC_BASE_URL`, accepted only when
   it is a valid HTTPS URL. `ARK_CODING_PLAN_BASE_URL` is also accepted as a
   compatibility alias, but new docs should prefer the explicit Anthropic name.
-- Model aliases: `opus`, `sonnet`, and `haiku` map to
-  `doubao-seed-2.0-pro`. `Doubao-Seed-2.0-pro` is normalized to
-  `doubao-seed-2.0-pro`; other non-empty model names pass through directly for
-  Ark-side model switching.
+- Model aliases: `opus`, `sonnet`, and `haiku` map to `ark-code-latest`.
+  Legacy `glm-latest`, `Doubao-Seed-2.0-pro`, and `doubao-seed-2.0-pro`
+  inputs also normalize to `ark-code-latest`; other non-empty model names pass through directly for Ark-side
+  model switching.
 - Ark Coding Plan profile removes inherited Anthropic, Bedrock, Vertex,
   DeepSeek, Ark, and provider-token variables before injecting its route.
 - Successful Ark provider construction adds a non-secret diagnostic to task
@@ -77,6 +77,30 @@ The OpenAI-compatible Ark Coding Plan endpoint
 `https://ark.cn-beijing.volces.com/api/coding/v3` is intentionally not the
 default here because this MCP tool drives Claude Code through
 Anthropic-compatible environment variables.
+
+## Ark Agent Plan Profile
+
+The `ark_agent_plan` provider profile builds a fresh child-process route:
+
+- Token source: `OPENAI_API_KEY_DOUBAO`.
+- Base URL: `https://ark.cn-beijing.volces.com/api/plan`, the Ark Agent Plan
+  Anthropic-compatible endpoint for Claude Code.
+- Optional override: `ARK_AGENT_PLAN_ANTHROPIC_BASE_URL`, accepted only when
+  it is a valid HTTPS URL. `ARK_AGENT_PLAN_BASE_URL` is also accepted as a
+  compatibility alias, but new docs should prefer the explicit Anthropic name.
+- Model aliases: `opus`, `sonnet`, and `haiku` map to `glm-5.2`; other
+  non-empty model names pass through directly for Ark-side model switching.
+- Ark Agent Plan profile removes inherited Anthropic, Bedrock, Vertex,
+  DeepSeek, Ark, and provider-token variables before injecting its route.
+- Successful Ark Agent Plan provider construction adds a non-secret diagnostic
+  to task results with the route host and token source variable, for example
+  `Ark Agent Plan route target: ark.cn-beijing.volces.com; token source: OPENAI_API_KEY_DOUBAO.`.
+
+The OpenAI-compatible Ark Agent Plan endpoint
+`https://ark.cn-beijing.volces.com/api/plan/v3` is intentionally not the
+default here because this MCP tool drives Claude Code through
+Anthropic-compatible environment variables. It is the same Volcengine/Ark model
+family as `ark_coding_plan`, but uses a different plan/quota pool.
 
 ## Gemini Profile
 

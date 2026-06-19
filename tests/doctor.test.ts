@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   arkCodingPlanEnvResult,
+  arkAgentPlanEnvResult,
   backgroundJobsResult,
   claudeCliResult,
   codexCliResult,
@@ -144,6 +145,14 @@ describe("doctor diagnostics", () => {
     expect(mismatch.detail).toContain("ARK_API_KEY wins");
   });
 
+  it("reports Ark Agent Plan env readiness", () => {
+    expect(arkAgentPlanEnvResult({}).level).toBe("warn");
+    expect(arkAgentPlanEnvResult({ OPENAI_API_KEY_DOUBAO: "same" })).toMatchObject({
+      level: "ok",
+      detail: expect.stringContaining("OPENAI_API_KEY_DOUBAO is set")
+    });
+  });
+
   it("reports Gemini env readiness and key precedence", () => {
     expect(geminiEnvResult({}).level).toBe("warn");
     expect(geminiEnvResult({ GEMINI_API_KEY: "same" })).toMatchObject({
@@ -166,7 +175,7 @@ describe("doctor diagnostics", () => {
     const details = results.map((result) => result.detail).join("\n");
 
     expect(details).toContain("review, delegate");
-    expect(details).toContain("anthropic, deepseek, ark_coding_plan, gemini");
+    expect(details).toContain("anthropic, deepseek, ark_coding_plan, ark_agent_plan, gemini");
     expect(details).toContain("cc_review, cc_delegate");
   });
 });

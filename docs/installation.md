@@ -7,6 +7,7 @@
 - Claude Code CLI on `PATH`; `claude --version` should work
 - A DeepSeek API key if you use `cc_delegate` without overriding `providerProfile`
 - An Ark Coding Plan API key if you explicitly use `providerProfile: "ark_coding_plan"`
+- An Ark Agent Plan API key if you explicitly use `providerProfile: "ark_agent_plan"`
 - A Gemini API key if you explicitly use `providerProfile: "gemini"` for `cc_review`
 - Claude Code authenticated locally if you use the native `anthropic` provider profile
 - Codex or another MCP client that can start a stdio MCP server
@@ -36,6 +37,19 @@ It defaults to the Ark Coding Plan Anthropic-compatible Claude Code endpoint
 `https://ark.cn-beijing.volces.com/api/coding`. The OpenAI-compatible endpoint
 `https://ark.cn-beijing.volces.com/api/coding/v3` is for OpenAI-wire clients,
 not this Claude Code provider profile.
+
+The `ark_agent_plan` provider profile requires this variable in the environment
+that starts Codex or the MCP server:
+
+```bash
+export OPENAI_API_KEY_DOUBAO="your-doubao-plan-api-key"
+```
+
+It defaults to the Ark Agent Plan Anthropic-compatible Claude Code endpoint
+`https://ark.cn-beijing.volces.com/api/plan`. The OpenAI-compatible endpoint
+`https://ark.cn-beijing.volces.com/api/plan/v3` is for OpenAI-wire clients, not
+this Claude Code provider profile. This profile uses a different plan/quota
+pool from `ark_coding_plan`.
 
 The `gemini` provider profile is direct `cc_review` only. It requires one of
 these variables in the environment that starts Codex or the MCP server:
@@ -169,6 +183,17 @@ codex-cc-tools review \
   --context "Ark Coding Plan route smoke only. Report whether this review invocation works."
 ```
 
+Ark Agent Plan smoke:
+
+```bash
+export OPENAI_API_KEY_DOUBAO="your-doubao-plan-api-key"
+codex-cc-tools review \
+  --provider-profile ark_agent_plan \
+  --model opus \
+  --task review_doc \
+  --context "Ark Agent Plan route smoke only. Report whether this review invocation works."
+```
+
 Gemini smoke:
 
 ```bash
@@ -206,9 +231,15 @@ node dist/mcp-server.js
 
 `ark_coding_plan` is configured per Claude Code child process from
 `ARK_API_KEY` or `VOLCENGINE_API_KEY`. The package injects Ark Coding Plan's
-Anthropic-compatible endpoint and `doubao-seed-2.0-pro` alias defaults, while
+Anthropic-compatible endpoint and `ark-code-latest` alias defaults, while
 removing inherited Anthropic, Bedrock, Vertex, DeepSeek, Ark, and other
 provider-token route variables first.
+
+`ark_agent_plan` is configured per Claude Code child process from
+`OPENAI_API_KEY_DOUBAO`. The package injects Ark Agent Plan's
+Anthropic-compatible endpoint and `glm-5.2` alias defaults, while removing
+inherited Anthropic, Bedrock, Vertex, DeepSeek, Ark, and other provider-token
+route variables first.
 
 `gemini` is configured per direct review request from `GEMINI_API_KEY`,
 `GOOGLE_API_KEY`, or `GOOGLE_GENERATIVE_AI_API_KEY`. It calls Gemini

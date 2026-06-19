@@ -416,6 +416,77 @@ describe("claude runner foundation", () => {
     expect(result.transcriptTail).toEqual(["Started then continued."]);
   });
 
+  it("falls back to structured output when non-stream result text is blank", async () => {
+    const structured = {
+      verdict: "approve",
+      summary: "No findings.",
+      findings: [],
+      missing_context: []
+    };
+
+    const result = await runClaudeTask(
+      {
+        cwd: process.cwd(),
+        input: "PACKET",
+        prompt: "Review stdin.",
+        provider: "anthropic",
+        model: "opus",
+        effort: "max",
+        cacheTtl: "1h",
+        permissionMode: "bypassPermissions",
+        tools: ["default"],
+        stream: false,
+        sourceEnv: {}
+      },
+      {
+        execute: async () => ({
+          stdout: JSON.stringify({ result: "   ", structured_output: structured }),
+          stderr: "",
+          exitCode: 0
+        }),
+        now: fakeClock([1, 2])
+      }
+    );
+
+    expect(result.review).toBe(JSON.stringify(structured, null, 2));
+    expect(result.structured).toEqual(structured);
+  });
+
+  it("falls back to structured output when streamed result text and transcript are blank", async () => {
+    const structured = {
+      verdict: "approve",
+      summary: "No findings.",
+      findings: [],
+      missing_context: []
+    };
+
+    const result = await runClaudeTask(
+      {
+        cwd: process.cwd(),
+        input: "PACKET",
+        prompt: "Review stdin.",
+        provider: "anthropic",
+        model: "opus",
+        effort: "max",
+        cacheTtl: "1h",
+        permissionMode: "bypassPermissions",
+        tools: ["default"],
+        stream: true,
+        sourceEnv: {}
+      },
+      {
+        executeStreaming: async (_command, _args, _options, onStdoutLine) => {
+          onStdoutLine(JSON.stringify({ type: "result", result: "", structured_output: structured }));
+          return { stdout: "", stderr: "", exitCode: 0 };
+        },
+        now: fakeClock([1, 2])
+      }
+    );
+
+    expect(result.review).toBe(JSON.stringify(structured, null, 2));
+    expect(result.structured).toEqual(structured);
+  });
+
   it("does not forward thinking deltas as review content", async () => {
     const result = await runClaudeTask(
       {

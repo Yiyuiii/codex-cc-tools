@@ -13,7 +13,7 @@ Claude Code task tools for Codex via MCP.
 
 `codex-cc-tools` is the successor-style tool family to the narrower `codex-cc-reviewer` package. It keeps the same Codex-facing architecture, but keeps the public surface intentionally small:
 
-- provider profile: which backend to use: Claude Code-backed `anthropic`, `deepseek`, `ark_coding_plan`, or direct review-only `gemini`
+- provider profile: which backend to use: Claude Code-backed `anthropic`, `deepseek`, `ark_coding_plan`, `ark_agent_plan`, or direct review-only `gemini`
 - task: what Codex is asking for, currently `review` or `delegate`
 - authority: read-only review or potentially destructive delegated Claude Code execution
 - result contract: structured output that Codex can inspect, synthesize, accept, reject, or defer
@@ -27,6 +27,7 @@ Requirements:
 - Claude Code CLI on `PATH`; `claude --version` should work
 - A DeepSeek API key if you use `cc_delegate` without overriding `providerProfile`
 - An Ark Coding Plan API key if you explicitly use `providerProfile: "ark_coding_plan"`
+- An Ark Agent Plan API key if you explicitly use `providerProfile: "ark_agent_plan"`
 - A Gemini API key if you explicitly use `providerProfile: "gemini"` for `cc_review`
 - Claude Code authenticated locally if you use the native `anthropic` provider profile
 - Codex or another MCP client that can launch a stdio MCP server
@@ -176,22 +177,66 @@ per-child-process Claude Code route:
 - `ANTHROPIC_BASE_URL=https://ark.cn-beijing.volces.com/api/coding`
 - `ANTHROPIC_AUTH_TOKEN=<resolved Ark Coding Plan key>`
 - `ANTHROPIC_MODEL=<resolved requested model>`
-- `ANTHROPIC_DEFAULT_OPUS_MODEL=doubao-seed-2.0-pro`
-- `ANTHROPIC_DEFAULT_SONNET_MODEL=doubao-seed-2.0-pro`
-- `ANTHROPIC_DEFAULT_HAIKU_MODEL=doubao-seed-2.0-pro`
-- `ANTHROPIC_SMALL_FAST_MODEL=doubao-seed-2.0-pro`
-- `CLAUDE_CODE_SUBAGENT_MODEL=doubao-seed-2.0-pro`
+- `ANTHROPIC_DEFAULT_OPUS_MODEL=ark-code-latest`
+- `ANTHROPIC_DEFAULT_SONNET_MODEL=ark-code-latest`
+- `ANTHROPIC_DEFAULT_HAIKU_MODEL=ark-code-latest`
+- `ANTHROPIC_SMALL_FAST_MODEL=ark-code-latest`
+- `CLAUDE_CODE_SUBAGENT_MODEL=ark-code-latest`
 - `CLAUDE_CODE_EFFORT_LEVEL=<requested effort>`
 
 Ark Coding Plan model inputs accepted by this package:
 
 | Input model | Ark Coding Plan model used |
 | --- | --- |
-| `opus` | `doubao-seed-2.0-pro` |
-| `sonnet` | `doubao-seed-2.0-pro` |
-| `haiku` | `doubao-seed-2.0-pro` |
-| `Doubao-Seed-2.0-pro` | `doubao-seed-2.0-pro` |
-| `doubao-seed-2.0-pro` | `doubao-seed-2.0-pro` |
+| `opus` | `ark-code-latest` |
+| `sonnet` | `ark-code-latest` |
+| `haiku` | `ark-code-latest` |
+| `ark-code-latest` | `ark-code-latest` |
+| `glm-latest` | `ark-code-latest` |
+| `Doubao-Seed-2.0-pro` | `ark-code-latest` |
+| `doubao-seed-2.0-pro` | `ark-code-latest` |
+| any other non-empty string | passed through as a direct Ark model name |
+
+For Ark Agent Plan, the MCP server process must start with:
+
+```bash
+export OPENAI_API_KEY_DOUBAO="your-doubao-plan-api-key"
+```
+
+This profile uses the same Volcengine/Ark family as `ark_coding_plan`, but a
+different plan/quota pool. Optional override:
+
+```bash
+ARK_AGENT_PLAN_ANTHROPIC_BASE_URL=https://ark.cn-beijing.volces.com/api/plan
+```
+
+Most users should not set the override. This package drives Claude Code through
+Anthropic-compatible environment variables, so `ark_agent_plan` defaults to
+`https://ark.cn-beijing.volces.com/api/plan`. The OpenAI-compatible endpoint
+`https://ark.cn-beijing.volces.com/api/plan/v3` is for OpenAI-wire clients, not
+this Claude Code provider profile.
+
+When `providerProfile: "ark_agent_plan"` is used, the package builds a
+per-child-process Claude Code route:
+
+- `ANTHROPIC_BASE_URL=https://ark.cn-beijing.volces.com/api/plan`
+- `ANTHROPIC_AUTH_TOKEN=<OPENAI_API_KEY_DOUBAO>`
+- `ANTHROPIC_MODEL=<resolved requested model>`
+- `ANTHROPIC_DEFAULT_OPUS_MODEL=glm-5.2`
+- `ANTHROPIC_DEFAULT_SONNET_MODEL=glm-5.2`
+- `ANTHROPIC_DEFAULT_HAIKU_MODEL=glm-5.2`
+- `ANTHROPIC_SMALL_FAST_MODEL=glm-5.2`
+- `CLAUDE_CODE_SUBAGENT_MODEL=glm-5.2`
+- `CLAUDE_CODE_EFFORT_LEVEL=<requested effort>`
+
+Ark Agent Plan model inputs accepted by this package:
+
+| Input model | Ark Agent Plan model used |
+| --- | --- |
+| `opus` | `glm-5.2` |
+| `sonnet` | `glm-5.2` |
+| `haiku` | `glm-5.2` |
+| `glm-5.2` | `glm-5.2` |
 | any other non-empty string | passed through as a direct Ark model name |
 
 For Gemini, `cc_review` calls Google Gemini `generateContent` directly. It does
@@ -255,7 +300,7 @@ Treat Claude Code output as advisory evidence; Codex must accept, reject, or def
 
 All tools accept:
 
-- `providerProfile`: `cc_review` defaults to `anthropic`; `cc_delegate` defaults to `deepseek`; explicit values can be `anthropic`, `deepseek`, `ark_coding_plan`, or review-only `gemini`
+- `providerProfile`: `cc_review` defaults to `anthropic`; `cc_delegate` defaults to `deepseek`; explicit values can be `anthropic`, `deepseek`, `ark_coding_plan`, `ark_agent_plan`, or review-only `gemini`
 - `model`: `opus` by default; provider aliases are resolved per profile. In the native Anthropic profile, `opus` resolves to `claude-opus-4-8`.
 - `effort`: `max` by default; one of `low`, `medium`, `high`, `max`
 - `cwd`: task working directory where applicable
@@ -340,6 +385,17 @@ codex-cc-tools review \
   --context "Ark Coding Plan route smoke only. Report whether this review invocation works."
 ```
 
+Ark Agent Plan CLI smoke:
+
+```bash
+export OPENAI_API_KEY_DOUBAO="your-doubao-plan-api-key"
+codex-cc-tools review \
+  --provider-profile ark_agent_plan \
+  --model opus \
+  --task review_doc \
+  --context "Ark Agent Plan route smoke only. Report whether this review invocation works."
+```
+
 Gemini CLI smoke:
 
 ```bash
@@ -358,8 +414,8 @@ This package is designed for trusted local owner workflows. It does not make Cla
 
 | Setting | Default | Notes |
 | --- | --- | --- |
-| `providerProfile` | `cc_review`: `anthropic`; `cc_delegate`: `deepseek` | `anthropic` uses native Claude Code profile/auth. `deepseek` requires `DEEPSEEK_API_KEY` or `OPENAI_API_KEY_DEEPSEEK`; `ark_coding_plan` requires `ARK_API_KEY` or `VOLCENGINE_API_KEY`; review-only `gemini` requires `GEMINI_API_KEY` or a Google fallback key. |
-| `model` | `opus` | In Anthropic profile, `opus` maps to `claude-opus-4-8`. In DeepSeek profile, `opus` and `sonnet` map to `deepseek-v4-pro[1m]`; `haiku` maps to `deepseek-v4-flash`. In Ark Coding Plan, common aliases map to `doubao-seed-2.0-pro`. In Gemini, common aliases map to `gemini-3.5-flash`. |
+| `providerProfile` | `cc_review`: `anthropic`; `cc_delegate`: `deepseek` | `anthropic` uses native Claude Code profile/auth. `deepseek` requires `DEEPSEEK_API_KEY` or `OPENAI_API_KEY_DEEPSEEK`; `ark_coding_plan` requires `ARK_API_KEY` or `VOLCENGINE_API_KEY`; `ark_agent_plan` requires `OPENAI_API_KEY_DOUBAO`; review-only `gemini` requires `GEMINI_API_KEY` or a Google fallback key. |
+| `model` | `opus` | In Anthropic profile, `opus` maps to `claude-opus-4-8`. In DeepSeek profile, `opus` and `sonnet` map to `deepseek-v4-pro[1m]`; `haiku` maps to `deepseek-v4-flash`. In Ark Coding Plan, common aliases map to `ark-code-latest`; legacy `glm-latest` and `doubao-seed-2.0-pro` inputs also normalize to `ark-code-latest`. In Ark Agent Plan, common aliases map to `glm-5.2`. In Gemini, common aliases map to `gemini-3.5-flash`. |
 | `effort` | `max` | Higher effort is slower and may cost more. On metered providers, use `medium` or `low` for routine checks. |
 | `cacheTtl` | `1h` | Adds Claude Code prompt-cache hint where supported; reported cache fields are provider/Claude Code estimates. |
 | `redactSecrets` | `true` for review packet evidence | Best-effort only; avoid sending secrets in prompts, files, and command output. |
@@ -385,6 +441,7 @@ Common issues:
 - Codex does not show the tools: restart Codex after changing MCP config.
 - DeepSeek says credentials are missing: set `DEEPSEEK_API_KEY` or `OPENAI_API_KEY_DEEPSEEK` in the environment that starts Codex or the MCP server.
 - Ark Coding Plan says credentials are missing: set `ARK_API_KEY` or `VOLCENGINE_API_KEY` in the environment that starts Codex or the MCP server.
+- Ark Agent Plan says credentials are missing: set `OPENAI_API_KEY_DOUBAO` in the environment that starts Codex or the MCP server.
 - Gemini says credentials are missing: set `GEMINI_API_KEY` in the environment that starts Codex or the MCP server.
 - Gemini direct access times out: pass `geminiProxyUrl` in the `cc_review` request or `--gemini-proxy-url` in the CLI. `HTTPS_PROXY` and `HTTP_PROXY` are still inherited as fallbacks when present in the process environment.
 - Setting the key in a terminal is not enough if Codex was launched elsewhere. Restart Codex from an environment that contains the variable, or set a persistent OS-level user variable.
@@ -405,7 +462,7 @@ See [docs/troubleshooting.md](docs/troubleshooting.md).
 - `cc_review`: second-opinion review
 - `cc_delegate`: prompt-driven Claude Code execution, read-only or writable by prompt scope
 
-Provider routing is orthogonal to the task. DeepSeek, Ark Coding Plan, and Gemini are not separate tasks; they are selected with `providerProfile`. Gemini is currently review-only.
+Provider routing is orthogonal to the task. DeepSeek, Ark Coding Plan, Ark Agent Plan, and Gemini are not separate tasks; they are selected with `providerProfile`. Gemini is currently review-only.
 
 ## Documentation
 

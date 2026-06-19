@@ -87,7 +87,7 @@ export function createProgram(deps: CreateProgramDeps = {}): Command {
     .option("--cwd <path>", "Working directory for the Claude Code subprocess.")
     .option(
       "--provider-profile <profile>",
-      "Provider profile: deepseek by default; also supports anthropic or ark_coding_plan. Gemini is review-only."
+      "Provider profile: deepseek by default; also supports anthropic, ark_coding_plan, or ark_agent_plan. Gemini is review-only."
     )
     .option("--model <model>", "Claude Code model or provider alias.")
     .option("--effort <level>", "Claude Code effort level.")
@@ -132,7 +132,10 @@ export function createProgram(deps: CreateProgramDeps = {}): Command {
     .option("--no-include-hook-events", "Do not request hook stream events.")
     .option("--no-verbose", "Do not request verbose stream events.")
     .option("--cache-ttl <ttl>", "Prompt cache TTL.")
-    .option("--provider-profile <profile>", "Provider profile: anthropic, deepseek, ark_coding_plan, or gemini.")
+    .option(
+      "--provider-profile <profile>",
+      "Provider profile: anthropic, deepseek, ark_coding_plan, ark_agent_plan, or gemini."
+    )
     .action(async (options) => {
       await reviewRunner(options);
     });

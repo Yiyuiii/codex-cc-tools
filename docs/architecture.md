@@ -20,6 +20,9 @@ Claude Code when the external API cannot expose Claude Code's tool surface.
 - `ark_coding_plan`: Volcengine Ark Coding Plan's Anthropic-compatible Claude
   Code endpoint. It is available as an explicit profile and remains
   experimental until real smoke and quality evidence are recorded.
+- `ark_agent_plan`: Volcengine Ark Agent Plan's Anthropic-compatible Claude
+  Code endpoint. It uses the same Ark family through a different plan/quota
+  pool and defaults common aliases to `glm-5.2`.
 - `gemini`: Google Gemini direct review provider. It calls Gemini
   `generateContent` for `review` and is not valid for `delegate`.
 
@@ -68,6 +71,8 @@ The current repository implements the provider and task registries, CLI/MCP entr
 - `src/providers/deepseek.ts` owns DeepSeek model aliases and endpoint defaults.
 - `src/providers/ark-coding-plan.ts` owns Ark Coding Plan model aliases and
   endpoint defaults.
+- `src/providers/ark-agent-plan.ts` owns Ark Agent Plan model aliases and
+  endpoint defaults.
 - `src/providers/gemini.ts` owns Gemini model aliases and endpoint defaults.
 - `src/core/redaction.ts` redacts provider tokens from nested output.
 - `src/core/claude-runner.ts` owns the initial Claude Code subprocess contract and happy-path stream parsing. The stream parser is redaction-unaware; the runner is the single output redaction boundary, with progress callbacks redacted before delivery.
@@ -102,8 +107,8 @@ Review packet safety defaults are conservative:
 
 ## Design Rule
 
-Do not make provider backends such as `deepseek`, `ark_coding_plan`, or
-`gemini` tasks.
+Do not make provider backends such as `deepseek`, `ark_coding_plan`,
+`ark_agent_plan`, or `gemini` tasks.
 They are provider profiles. The generic subtask capability should be
 represented as `task: "delegate"` with the selected `providerProfile`.
 Provider profiles that cannot provide Claude Code's execution tool surface must

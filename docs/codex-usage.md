@@ -120,7 +120,8 @@ subprocess with its own environment, model, and working directory.
 | --- | --- |
 | `anthropic` | High-stakes reviews where you want native Claude Code quality. Default for `cc_review`; `opus` resolves to `claude-opus-4-8`. |
 | `deepseek` | Routine delegated work where DeepSeek V4 Pro quality is adequate and cost matters. Default for `cc_delegate`. |
-| `ark_coding_plan` | Explicit fallback or comparison runs through Volcengine Ark Coding Plan. Common aliases route to `doubao-seed-2.0-pro`. |
+| `ark_coding_plan` | Explicit fallback or comparison runs through Volcengine Ark Coding Plan. Common aliases route to `ark-code-latest`. |
+| `ark_agent_plan` | Explicit fallback or comparison runs through Volcengine Ark Agent Plan's separate plan/quota pool. Common aliases route to `glm-5.2`. |
 | `gemini` | Direct Gemini review-only fallback through `gemini-3.5-flash`. Valid for `cc_review`; rejected by `cc_delegate`. |
 
 You can override either default by setting `providerProfile` explicitly.

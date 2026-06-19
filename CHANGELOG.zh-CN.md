@@ -1,5 +1,24 @@
 # 更新日志
 
+## 未发布
+
+## [0.4.0-beta.2] - 2026-06-19
+
+- 新增显式 `ark_agent_plan` provider profile，用于火山方舟 Ark Agent Plan。
+  它读取 `OPENAI_API_KEY_DOUBAO`，通过兼容 Anthropic 协议的 Claude Code
+  端点 `https://ark.cn-beijing.volces.com/api/plan` 路由，常见别名映射到
+  `glm-5.2`，并把兼容 OpenAI 协议的
+  `https://ark.cn-beijing.volces.com/api/plan/v3` 记录为非默认的 OpenAI-wire
+  端点。
+- Ark Coding Plan 的常见模型别名（`opus`、`sonnet`、`haiku`）默认改为路由到
+  `ark-code-latest`；旧的 `glm-latest`、`Doubao-Seed-2.0-pro` 和
+  `doubao-seed-2.0-pro` 输入仍作为兼容别名归一到 `ark-code-latest`。
+- Ark 的常见 Claude Code 别名改为大小写无关处理，因此 `Opus` / `OPUS`
+  会和 `opus` 一样解析。
+- 当 Claude Code 子进程返回空白 `result` / transcript 但存在
+  `structured_output` 时，格式化该结构化输出，避免出现成功但正文为空的
+  `review` / `delegate` 结果。
+
 ## [0.4.0-beta.1] - 2026-06-04
 
 - `cc_review` 新增 `geminiProxyUrl`，CLI 新增 `--gemini-proxy-url`，用于

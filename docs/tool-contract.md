@@ -47,7 +47,9 @@ container, worktree, repository, and command policy remain outside this tool.
 `delegate` defaults to `providerProfile: "deepseek"`; callers can set
 `providerProfile: "anthropic"` when they want native Claude Code routing, or
 `providerProfile: "ark_coding_plan"` when they want Volcengine Ark Coding Plan
-routing.
+routing, or `providerProfile: "ark_agent_plan"` when they want Volcengine Ark
+Agent Plan routing through the separate `OPENAI_API_KEY_DOUBAO` plan/quota
+pool.
 `providerProfile: "gemini"` is rejected for `delegate`; Gemini direct API does
 not provide the Claude Code execution tool surface.
 Callers may launch multiple `delegate` tasks in parallel. Each task starts a

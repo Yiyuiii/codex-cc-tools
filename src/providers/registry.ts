@@ -1,14 +1,24 @@
 import { z } from "zod";
 
 import {
-  ARK_CODING_PLAN_PRO_MODEL,
+  ARK_CODING_PLAN_DEFAULT_MODEL,
   resolveArkCodingPlanModel
 } from "./ark-coding-plan.js";
+import {
+  ARK_AGENT_PLAN_DEFAULT_MODEL,
+  resolveArkAgentPlanModel
+} from "./ark-agent-plan.js";
 import { resolveAnthropicModel } from "./anthropic.js";
 import { DEEPSEEK_FLASH_MODEL, resolveDeepSeekModel } from "./deepseek.js";
 import { resolveGeminiModel } from "./gemini.js";
 
-export const ProviderProfileSchema = z.enum(["anthropic", "deepseek", "ark_coding_plan", "gemini"]);
+export const ProviderProfileSchema = z.enum([
+  "anthropic",
+  "deepseek",
+  "ark_coding_plan",
+  "ark_agent_plan",
+  "gemini"
+]);
 export type ProviderProfileName = z.infer<typeof ProviderProfileSchema>;
 
 export interface ProviderProfileDefinition {
@@ -40,6 +50,11 @@ const PROVIDERS: ProviderProfileDefinition[] = [
   {
     name: "ark_coding_plan",
     role: "Volcengine Ark Coding Plan Claude Code provider",
+    experimental: true
+  },
+  {
+    name: "ark_agent_plan",
+    role: "Volcengine Ark Agent Plan Claude Code provider",
     experimental: true
   },
   {
@@ -82,10 +97,19 @@ export function resolveProviderProfile(
     };
   }
 
+  if (provider === "ark_agent_plan") {
+    return {
+      provider,
+      model: resolveArkAgentPlanModel(requestedModel),
+      subagentModel: ARK_AGENT_PLAN_DEFAULT_MODEL,
+      experimental: true
+    };
+  }
+
   return {
     provider,
     model: resolveArkCodingPlanModel(requestedModel),
-    subagentModel: ARK_CODING_PLAN_PRO_MODEL,
+    subagentModel: ARK_CODING_PLAN_DEFAULT_MODEL,
     experimental: true
   };
 }

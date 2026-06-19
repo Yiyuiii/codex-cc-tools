@@ -193,16 +193,16 @@ describe("provider environment", () => {
     });
 
     expect(result.ok).toBe(true);
-    expect(result.model).toBe("doubao-seed-2.0-pro");
+    expect(result.model).toBe("ark-code-latest");
     expect(result.env).toMatchObject({
       ANTHROPIC_BASE_URL: "https://ark.example.test/api/coding",
       ANTHROPIC_AUTH_TOKEN: "ark-token",
-      ANTHROPIC_MODEL: "doubao-seed-2.0-pro",
-      ANTHROPIC_DEFAULT_OPUS_MODEL: "doubao-seed-2.0-pro",
-      ANTHROPIC_DEFAULT_SONNET_MODEL: "doubao-seed-2.0-pro",
-      ANTHROPIC_DEFAULT_HAIKU_MODEL: "doubao-seed-2.0-pro",
-      ANTHROPIC_SMALL_FAST_MODEL: "doubao-seed-2.0-pro",
-      CLAUDE_CODE_SUBAGENT_MODEL: "doubao-seed-2.0-pro",
+      ANTHROPIC_MODEL: "ark-code-latest",
+      ANTHROPIC_DEFAULT_OPUS_MODEL: "ark-code-latest",
+      ANTHROPIC_DEFAULT_SONNET_MODEL: "ark-code-latest",
+      ANTHROPIC_DEFAULT_HAIKU_MODEL: "ark-code-latest",
+      ANTHROPIC_SMALL_FAST_MODEL: "ark-code-latest",
+      CLAUDE_CODE_SUBAGENT_MODEL: "ark-code-latest",
       CLAUDE_CODE_EFFORT_LEVEL: "high",
       CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: "1",
       ENABLE_PROMPT_CACHING_1H: "1",
@@ -231,7 +231,7 @@ describe("provider environment", () => {
       })
     ).toMatchObject({
       ok: true,
-      model: "doubao-seed-2.0-pro",
+      model: "ark-code-latest",
       diagnostics: [
         "Ark Coding Plan route target: ark.cn-beijing.volces.com; token source: VOLCENGINE_API_KEY."
       ],
@@ -265,6 +265,109 @@ describe("provider environment", () => {
     ).toMatchObject({
       ok: false,
       redactions: ["ark-token"],
+      error: expect.stringContaining("https")
+    });
+  });
+
+  it("injects Ark Agent Plan env per invocation and removes inherited provider route variables", () => {
+    const result = buildProviderEnvironment({
+      provider: "ark_agent_plan",
+      model: "opus",
+      effort: "high",
+      cacheTtl: "1h",
+      sourceEnv: {
+        OPENAI_API_KEY_DOUBAO: "doubao-token",
+        ARK_AGENT_PLAN_ANTHROPIC_BASE_URL: " https://ark.example.test/api/plan ",
+        ARK_API_KEY: "stale-ark-token",
+        VOLCENGINE_API_KEY: "stale-volcengine-token",
+        DEEPSEEK_API_KEY: "stale-deepseek-token",
+        ANTHROPIC_API_KEY: "stale-anthropic-key",
+        ANTHROPIC_AUTH_TOKEN: "stale-auth-token",
+        ANTHROPIC_BASE_URL: "https://stale.example.test",
+        ANTHROPIC_MODEL: "claude-opus",
+        ANTHROPIC_DEFAULT_OPUS_MODEL: "claude-opus",
+        ANTHROPIC_DEFAULT_SONNET_MODEL: "claude-sonnet",
+        ANTHROPIC_DEFAULT_HAIKU_MODEL: "claude-haiku",
+        ANTHROPIC_SMALL_FAST_MODEL: "claude-haiku",
+        CLAUDE_CODE_SUBAGENT_MODEL: "claude-haiku",
+        HTTPS_PROXY: "http://proxy.example.test:8080"
+      }
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.model).toBe("glm-5.2");
+    expect(result.env).toMatchObject({
+      ANTHROPIC_BASE_URL: "https://ark.example.test/api/plan",
+      ANTHROPIC_AUTH_TOKEN: "doubao-token",
+      ANTHROPIC_MODEL: "glm-5.2",
+      ANTHROPIC_DEFAULT_OPUS_MODEL: "glm-5.2",
+      ANTHROPIC_DEFAULT_SONNET_MODEL: "glm-5.2",
+      ANTHROPIC_DEFAULT_HAIKU_MODEL: "glm-5.2",
+      ANTHROPIC_SMALL_FAST_MODEL: "glm-5.2",
+      CLAUDE_CODE_SUBAGENT_MODEL: "glm-5.2",
+      CLAUDE_CODE_EFFORT_LEVEL: "high",
+      CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: "1",
+      ENABLE_PROMPT_CACHING_1H: "1",
+      HTTPS_PROXY: "http://proxy.example.test:8080"
+    });
+    expect(result.env).not.toHaveProperty("OPENAI_API_KEY_DOUBAO");
+    expect(result.env).not.toHaveProperty("ARK_AGENT_PLAN_ANTHROPIC_BASE_URL");
+    expect(result.env).not.toHaveProperty("ARK_API_KEY");
+    expect(result.env).not.toHaveProperty("VOLCENGINE_API_KEY");
+    expect(result.env).not.toHaveProperty("DEEPSEEK_API_KEY");
+    expect(result.env).not.toHaveProperty("ANTHROPIC_API_KEY");
+    expect(result.env).not.toHaveProperty("ANTHROPIC_AUTH_TOKEN", "stale-auth-token");
+    expect(result.redactions).toEqual(["doubao-token"]);
+    expect(result.diagnostics).toEqual([
+      "Ark Agent Plan route target: ark.example.test; token source: OPENAI_API_KEY_DOUBAO."
+    ]);
+  });
+
+  it("rejects missing or invalid Ark Agent Plan config", () => {
+    expect(
+      buildProviderEnvironment({
+        provider: "ark_agent_plan",
+        model: "sonnet",
+        effort: "medium",
+        cacheTtl: "1h",
+        sourceEnv: { OPENAI_API_KEY_DOUBAO: "doubao-token" }
+      })
+    ).toMatchObject({
+      ok: true,
+      model: "glm-5.2",
+      diagnostics: [
+        "Ark Agent Plan route target: ark.cn-beijing.volces.com; token source: OPENAI_API_KEY_DOUBAO."
+      ],
+      redactions: ["doubao-token"]
+    });
+
+    expect(
+      buildProviderEnvironment({
+        provider: "ark_agent_plan",
+        model: "opus",
+        effort: "medium",
+        cacheTtl: "1h",
+        sourceEnv: {}
+      })
+    ).toMatchObject({
+      ok: false,
+      error: expect.stringContaining("OPENAI_API_KEY_DOUBAO")
+    });
+
+    expect(
+      buildProviderEnvironment({
+        provider: "ark_agent_plan",
+        model: "opus",
+        effort: "medium",
+        cacheTtl: "1h",
+        sourceEnv: {
+          OPENAI_API_KEY_DOUBAO: " doubao-token ",
+          ARK_AGENT_PLAN_ANTHROPIC_BASE_URL: "http://ark.example.test/api/plan"
+        }
+      })
+    ).toMatchObject({
+      ok: false,
+      redactions: ["doubao-token"],
       error: expect.stringContaining("https")
     });
   });
